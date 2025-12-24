@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Menu, Bell, Settings, Plus, LayoutGrid, List, TrendingUp, 
@@ -137,7 +136,6 @@ const App: React.FC = () => {
     setIsAddingTransaction(true);
   };
 
-  // Fix: Added handleCloneTransaction to resolve errors on lines 437 and 471.
   const handleCloneTransaction = (tx: Transaction) => {
     setEditingTransaction(null);
     setTxType(tx.type);
@@ -266,13 +264,18 @@ const App: React.FC = () => {
   };
 
   const handleDeleteAccount = (id: string) => {
+    // Check if account has any associated transactions
+    const hasTransactions = transactions.some(t => t.accountId === id || t.toAccountId === id);
+    if (hasTransactions) {
+      alert("This account has transaction records and cannot be deleted. Please delete its records first.");
+      return;
+    }
     if (accounts.length <= 1) {
       alert("You must have at least one account.");
       return;
     }
-    if (!confirm("Delete this account and all its transactions?")) return;
+    if (!confirm("Are you sure you want to delete this account?")) return;
     setAccounts(prev => prev.filter(a => a.id !== id));
-    setTransactions(prev => prev.filter(t => t.accountId !== id && t.toAccountId !== id));
     if (selectedAccountIds.includes(id)) {
       setSelectedAccountIds(prev => prev.filter(x => x !== id));
     }
@@ -302,7 +305,13 @@ const App: React.FC = () => {
   };
 
   const deleteCategory = (catId: string) => {
-    if (!confirm(`Delete this category and all its sub-categories?`)) return;
+    const catName = categories.find(c => c.id === catId)?.name;
+    const hasTransactions = transactions.some(t => t.category === catName);
+    if (hasTransactions) {
+      alert("This category is used in existing transactions and cannot be deleted.");
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete this category?`)) return;
     setCategories(prev => prev.filter(c => c.id !== catId));
     setManagingCategory(null);
   };
@@ -344,7 +353,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteSubCategory = (catId: string, index: number) => {
-    if (!confirm("Delete this sub-category?")) return;
+    if (!confirm("Are you sure you want to delete this sub-category?")) return;
     setCategories(prev => prev.map(c => {
       if (c.id === catId) {
         const nextSubs = [...c.subCategories];
@@ -460,7 +469,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Other views */}
+        {/* Records View */}
         {activeView === 'records' && (
           <div className="flex flex-col h-full animate-in slide-in-from-right duration-400">
              <div className="p-4 border-b border-zinc-900 bg-[#0e0e10]/80 backdrop-blur-lg sticky top-0 z-20">
@@ -493,6 +502,7 @@ const App: React.FC = () => {
            </div>
         )}
 
+        {/* Categories View */}
         {activeView === 'categories' && (
           <div className="flex flex-col h-full animate-in slide-in-from-right duration-400">
              <div className="p-4 border-b border-zinc-900 bg-[#0e0e10]/80 backdrop-blur-lg sticky top-0 z-20 flex items-center justify-between">
@@ -537,7 +547,7 @@ const App: React.FC = () => {
         <button onClick={() => setActiveView('categories')} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'categories' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><PieChart className="w-6 h-6" /><span className="text-[10px] font-bold uppercase tracking-tighter">Cats</span></button>
       </nav>
 
-      {/* Transaction Modal */}
+      {/* Transaction Entry Modal */}
       {isAddingTransaction && (
         <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col safe-top animate-in slide-in-from-bottom duration-300">
            <div className="bg-blue-600 p-4">
@@ -595,7 +605,7 @@ const App: React.FC = () => {
               </div>
            </div>
 
-           {/* Centered Symmetric Keypad */}
+           {/* Numeric Keypad */}
            <div className="bg-[#1c1c1f] p-4">
               <div className="grid grid-cols-4 gap-2">
                  {[7, 8, 9, '/', 4, 5, 6, '*', 1, 2, 3, '-', '.', 0, 'DEL', '+'].map((key, idx) => (
@@ -632,14 +642,14 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Account Picker Modal - Screenshot-matched UI */}
+      {/* Account Picker Modal - Screenshot-matched UI with solid high-contrast background */}
       {(showFromAccountPicker || showToAccountPicker) && (
-        <div className="fixed inset-0 z-[150] bg-black/98 backdrop-blur-xl flex flex-col p-6 safe-top animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-[150] bg-[#0e0e10] flex flex-col p-6 safe-top animate-in fade-in zoom-in duration-200">
            <div className="flex items-center justify-between mb-8">
-             <h3 className="text-xl font-bold text-white">
+             <h3 className="text-xl font-bold text-white uppercase tracking-tight">
                {showFromAccountPicker ? 'Select Account' : 'Select Destination'}
              </h3>
-             <button onClick={() => { setShowFromAccountPicker(false); setShowToAccountPicker(false); }} className="p-2 bg-zinc-900 rounded-full text-zinc-400"><X className="w-6 h-6" /></button>
+             <button onClick={() => { setShowFromAccountPicker(false); setShowToAccountPicker(false); }} className="p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
            </div>
            <div className="flex-1 overflow-y-auto no-scrollbar space-y-3 pb-20">
               {accounts
@@ -653,15 +663,12 @@ const App: React.FC = () => {
                     setShowFromAccountPicker(false);
                     setShowToAccountPicker(false);
                   }}
-                  className="w-full flex items-center justify-between p-5 bg-[#1c1c1f]/40 border border-zinc-800/60 rounded-[1.8rem] active:scale-[0.98] transition-all"
+                  className="w-full flex items-center justify-between p-5 bg-zinc-900 border border-zinc-800 rounded-[1.8rem] active:scale-[0.98] transition-all hover:bg-zinc-800/50"
                 >
                   <div className="flex items-center gap-4">
-                    {/* Icon + Color Dot */}
-                    <div className="flex items-center gap-3">
-                       <div style={{ color: acc.color }} className="opacity-80">
-                         <AccountIcon type={acc.type} className="w-5 h-5" />
-                       </div>
-                       <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: acc.color }} />
+                    {/* Icon Only (Removed color dot/circle) */}
+                    <div style={{ color: acc.color }} className="opacity-80">
+                      <AccountIcon type={acc.type} className="w-5 h-5" />
                     </div>
                     <span className="font-bold text-lg text-zinc-100">{acc.name}</span>
                   </div>
@@ -672,16 +679,16 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Category Picker Modal */}
+      {/* Category Picker Modal with solid high-contrast background */}
       {showCategoryPicker && (
-        <div className="fixed inset-0 z-[150] bg-black/98 backdrop-blur-xl flex flex-col p-6 safe-top animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-[150] bg-[#0e0e10] flex flex-col p-6 safe-top animate-in fade-in zoom-in duration-200">
            <div className="flex items-center justify-between mb-6">
-             <h3 className="text-xl font-bold text-white">Select Category</h3>
-             <button onClick={() => { setShowCategoryPicker(false); setCategorySearch(''); }} className="p-2 bg-zinc-900 rounded-full text-zinc-400"><X className="w-6 h-6" /></button>
+             <h3 className="text-xl font-bold text-white uppercase tracking-tight">Select Category</h3>
+             <button onClick={() => { setShowCategoryPicker(false); setCategorySearch(''); }} className="p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
            </div>
            <div className="relative mb-6">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-              <input autoFocus placeholder="Search..." value={categorySearch} onChange={e => setCategorySearch(e.target.value)} className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-blue-600 font-medium text-white" />
+              <input autoFocus placeholder="Search..." value={categorySearch} onChange={e => setCategorySearch(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-blue-600 font-medium text-white" />
            </div>
            <div className="flex-1 overflow-y-auto no-scrollbar space-y-1 pb-20">
               {filteredFlatCategories.map((item, idx) => (
@@ -693,7 +700,7 @@ const App: React.FC = () => {
                     setShowCategoryPicker(false);
                     setCategorySearch('');
                   }}
-                  className="w-full text-left p-4 rounded-2xl hover:bg-zinc-800/50 flex items-center justify-between border border-transparent active:border-zinc-800 transition-all"
+                  className="w-full text-left p-4 rounded-2xl bg-zinc-900/60 hover:bg-zinc-800 flex items-center justify-between border border-transparent active:border-zinc-800 transition-all mb-2"
                 >
                   <span className={`font-bold ${item.sub ? 'text-zinc-400 text-sm pl-4' : 'text-zinc-100 text-lg'}`}>{item.display}</span>
                   <ChevronRight className="w-4 h-4 text-zinc-700" />
@@ -703,16 +710,16 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Sub-category & Category Details Modal */}
+      {/* Sub-category & Category Details Modal with solid high-contrast background */}
       {managingCategory && (
         <div className="fixed inset-0 z-[160] bg-[#0e0e10] flex flex-col p-6 safe-top animate-in slide-in-from-bottom duration-300">
            <div className="flex items-center justify-between mb-8">
-             <button onClick={() => setManagingCategory(null)} className="p-2 text-zinc-500"><ArrowLeft className="w-6 h-6" /></button>
-             <h3 className="text-xl font-bold">Manage Details</h3>
-             <button onClick={() => deleteCategory(managingCategory.id)} className="p-2 text-rose-500 bg-rose-500/10 rounded-xl"><Trash2 className="w-5 h-5" /></button>
+             <button onClick={() => setManagingCategory(null)} className="p-2 text-zinc-500 hover:text-white transition-colors"><ArrowLeft className="w-6 h-6" /></button>
+             <h3 className="text-xl font-bold uppercase tracking-tight">Manage Details</h3>
+             <button onClick={() => deleteCategory(managingCategory.id)} className="p-2 text-rose-500 bg-rose-500/10 rounded-xl hover:bg-rose-500/20 transition-colors"><Trash2 className="w-5 h-5" /></button>
            </div>
 
-           <div className="bg-zinc-900/50 p-6 rounded-[2.5rem] border border-zinc-800 mb-8">
+           <div className="bg-zinc-900 p-6 rounded-[2.5rem] border border-zinc-800 mb-8">
              <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest block mb-2">Category Name</span>
              <div className="flex items-center justify-between">
                 {isEditingCategoryName ? (
@@ -720,7 +727,7 @@ const App: React.FC = () => {
                 ) : (
                   <>
                     <span className="text-2xl font-bold text-white">{managingCategory.name}</span>
-                    <button onClick={() => { setIsEditingCategoryName(true); setEditingCategoryValue(managingCategory.name); }} className="p-2 text-zinc-500"><Edit2 className="w-4 h-4" /></button>
+                    <button onClick={() => { setIsEditingCategoryName(true); setEditingCategoryValue(managingCategory.name); }} className="p-2 text-zinc-500 hover:text-white transition-colors"><Edit2 className="w-4 h-4" /></button>
                   </>
                 )}
              </div>
@@ -728,12 +735,12 @@ const App: React.FC = () => {
 
            <div className="flex-1 overflow-y-auto no-scrollbar pb-20">
               <div className="flex items-center justify-between mb-4 px-2">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Sub-items</span>
-                <button onClick={() => handleAddSubCategory(managingCategory.id)} className="text-blue-500 font-bold flex items-center gap-1 bg-blue-500/10 px-4 py-1.5 rounded-full text-sm"><Plus className="w-4 h-4" /> Add New</button>
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Sub-categories</span>
+                <button onClick={() => handleAddSubCategory(managingCategory.id)} className="text-blue-500 font-bold flex items-center gap-1 bg-blue-500/10 px-4 py-1.5 rounded-full text-sm active:scale-95 transition-all"><Plus className="w-4 h-4" /> Add New</button>
               </div>
               <div className="space-y-2">
                  {managingCategory.subCategories.map((sub, idx) => (
-                   <div key={idx} className="p-4 bg-[#1c1c1f]/50 rounded-2xl flex items-center justify-between border border-zinc-800/30">
+                   <div key={idx} className="p-4 bg-zinc-900 rounded-2xl flex items-center justify-between border border-zinc-800">
                       <span className="font-bold text-zinc-200">{sub}</span>
                       <div className="flex gap-2">
                          <button onClick={() => handleEditSubCategory(managingCategory.id, sub, idx)} className="p-2 text-zinc-500 hover:text-blue-400"><Edit2 className="w-4 h-4" /></button>
@@ -751,8 +758,8 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[140] flex items-center justify-center p-6 bg-black/95 backdrop-blur-md">
            <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 space-y-6 animate-in zoom-in duration-200 shadow-2xl">
              <div className="flex justify-between items-center">
-               <h3 className="text-xl font-bold">{isAddingAccount ? 'New Account' : 'Edit Account'}</h3>
-               <button onClick={() => {setIsAddingAccount(false); setEditingAccount(null); setTempAccount(null);}}><X className="w-6 h-6 text-zinc-500" /></button>
+               <h3 className="text-xl font-bold uppercase tracking-tight">{isAddingAccount ? 'New Account' : 'Edit Account'}</h3>
+               <button onClick={() => {setIsAddingAccount(false); setEditingAccount(null); setTempAccount(null);}}><X className="w-6 h-6 text-zinc-500 hover:text-white" /></button>
              </div>
              <div className="space-y-4 max-h-[70vh] overflow-y-auto no-scrollbar pb-4">
                 <div className="space-y-1">
@@ -763,7 +770,7 @@ const App: React.FC = () => {
                   <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-4">Account Type</span>
                   <div className="grid grid-cols-2 gap-2">
                     {Object.values(AccountType).map(type => (
-                      <button key={type} onClick={() => isAddingAccount ? setNewAccType(type) : setTempAccount(prev => prev ? {...prev, type} : null)} className={`p-3 rounded-xl border flex items-center gap-2 transition-all ${(isAddingAccount ? newAccType === type : tempAccount?.type === type) ? 'bg-blue-600/20 border-blue-500 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-500'}`}><AccountIcon type={type} className="w-4 h-4" /><span className="text-[10px] font-bold uppercase">{type}</span></button>
+                      <button key={type} onClick={() => isAddingAccount ? setNewAccType(type) : setTempAccount(prev => prev ? {...prev, type} : null)} className={`p-3 rounded-xl border flex items-center gap-2 transition-all ${(isAddingAccount ? newAccType === type : tempAccount?.type === type) ? 'bg-blue-600 border-blue-500 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-500'}`}><AccountIcon type={type} className="w-4 h-4" /><span className="text-[10px] font-bold uppercase tracking-widest">{type}</span></button>
                     ))}
                   </div>
                 </div>
@@ -775,15 +782,15 @@ const App: React.FC = () => {
                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-4 block">Account Color</span>
                    <div className="grid grid-cols-5 gap-2">
                       {FULL_SPECTRUM_COLORS.map(color => (
-                        <button key={color} onClick={() => isAddingAccount ? setNewAccColor(color) : setTempAccount(prev => prev ? {...prev, color} : null)} style={{ backgroundColor: color }} className={`w-8 h-8 rounded-full border-2 transition-transform ${(isAddingAccount ? newAccColor === color : tempAccount?.color === color) ? 'border-white scale-125 shadow-lg' : 'border-transparent opacity-60'}`} />
+                        <button key={color} onClick={() => isAddingAccount ? setNewAccColor(color) : setTempAccount(prev => prev ? {...prev, color} : null)} style={{ backgroundColor: color }} className={`w-8 h-8 rounded-full border-2 transition-transform ${(isAddingAccount ? newAccColor === color : tempAccount?.color === color) ? 'border-white scale-125 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'}`} />
                       ))}
                    </div>
                 </div>
              </div>
              
              <div className="flex flex-col gap-2 pt-2">
-                <button onClick={isAddingAccount ? handleAddAccount : handleUpdateAccount} className="w-full py-5 bg-blue-600 rounded-2xl font-black text-white shadow-lg active:scale-95 transition-all">{isAddingAccount ? 'Create Account' : 'Update Wallet'}</button>
-                {editingAccount && <button onClick={() => handleDeleteAccount(editingAccount.id)} className="w-full py-4 text-rose-500 font-bold text-sm bg-rose-500/10 rounded-2xl border border-rose-500/20 active:bg-rose-500/20 transition-all">Delete Account</button>}
+                <button onClick={isAddingAccount ? handleAddAccount : handleUpdateAccount} className="w-full py-5 bg-blue-600 rounded-2xl font-black text-white shadow-lg active:scale-95 transition-all uppercase tracking-widest">{isAddingAccount ? 'Create Account' : 'Update Wallet'}</button>
+                {editingAccount && <button onClick={() => handleDeleteAccount(editingAccount.id)} className="w-full py-4 text-rose-500 font-bold text-sm bg-rose-500/10 rounded-2xl border border-rose-500/20 active:bg-rose-500/20 transition-all uppercase tracking-widest">Delete Account</button>}
              </div>
            </div>
         </div>
@@ -794,12 +801,12 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
           <div className="w-full max-sm:w-full bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-6 space-y-6 shadow-2xl">
             <div className="flex items-center justify-between">
-               <h3 className="text-lg font-bold">Manage Accounts</h3>
-               <button onClick={() => setShowAccountManager(false)} className="p-2 bg-zinc-800 rounded-full text-zinc-400"><X className="w-5 h-5" /></button>
+               <h3 className="text-lg font-bold uppercase tracking-tight">Manage Accounts</h3>
+               <button onClick={() => setShowAccountManager(false)} className="p-2 bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
             </div>
             <div className="space-y-2 max-h-[60vh] overflow-y-auto no-scrollbar">
                {accounts.map(acc => (
-                 <div key={acc.id} className="flex items-center justify-between p-4 bg-zinc-950/50 border border-zinc-800 rounded-2xl group">
+                 <div key={acc.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-800 rounded-2xl group">
                     <div className="flex items-center gap-3">
                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${acc.color}20`, color: acc.color }}><AccountIcon type={acc.type} className="w-5 h-5" /></div>
                        <span className="font-bold">{acc.name}</span>
@@ -808,7 +815,7 @@ const App: React.FC = () => {
                  </div>
                ))}
             </div>
-            <button onClick={() => { setIsAddingAccount(true); setShowAccountManager(false); }} className="w-full py-4 bg-zinc-800 border border-zinc-700 rounded-2xl font-bold text-zinc-300 hover:text-white flex items-center justify-center gap-2"><Plus className="w-5 h-5" /> New Account</button>
+            <button onClick={() => { setIsAddingAccount(true); setShowAccountManager(false); }} className="w-full py-4 bg-zinc-800 border border-zinc-700 rounded-2xl font-bold text-zinc-300 hover:text-white flex items-center justify-center gap-2 active:scale-95 transition-all"><Plus className="w-5 h-5" /> New Account</button>
           </div>
         </div>
       )}
