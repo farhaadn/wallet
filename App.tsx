@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Menu, Bell, Settings, Plus, LayoutGrid, List, TrendingUp, 
@@ -12,7 +11,6 @@ import {
 import { 
   Account, Transaction, TransactionType, AccountType, Category, Currency 
 } from './types';
-import { getFinancialAdvice } from './services/geminiService';
 
 const App: React.FC = () => {
   // Navigation View
@@ -44,8 +42,6 @@ const App: React.FC = () => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isAddingAccount, setIsAddingAccount] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-  const [aiInsight, setAiInsight] = useState<string | null>(null);
-  const [isLoadingAi, setIsLoadingAi] = useState(false);
   
   // Modals for Category management
   const [showCatModal, setShowCatModal] = useState<{ type: 'cat' | 'sub', catId?: string } | null>(null);
@@ -222,14 +218,6 @@ const App: React.FC = () => {
                 </div>
               ))}
               <button onClick={() => setIsAddingAccount(true)} className="flex flex-col items-center justify-center p-3 rounded-2xl border-2 border-dashed border-zinc-800 h-24 text-zinc-500 gap-1 bg-zinc-900/20"><Plus className="w-5 h-5" /><span className="text-[10px] font-bold uppercase">Add</span></button>
-            </div>
-
-            <div className="bg-gradient-to-br from-indigo-900/20 to-blue-900/30 p-5 rounded-3xl border border-blue-500/20 shadow-xl">
-              <div className="flex items-center justify-between mb-3 text-blue-400">
-                <div className="flex items-center gap-2"><Sparkles className="w-5 h-5" /><span className="text-xs font-bold uppercase tracking-widest">AI Insights</span></div>
-                {!isLoadingAi && <button onClick={async () => { setIsLoadingAi(true); setAiInsight(await getFinancialAdvice(transactions, accounts)); setIsLoadingAi(false); }} className="text-[10px] px-3 py-1 bg-blue-600 rounded-full text-white font-black">ANALYZE</button>}
-              </div>
-              {isLoadingAi ? <div className="h-10 flex justify-center items-center"><div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div> : <p className="text-sm text-zinc-300 italic leading-relaxed">{aiInsight || "Tap analyze for AI feedback."}</p>}
             </div>
 
             <div className="space-y-4">
