@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Menu, Bell, Settings, Plus, LayoutGrid, List, TrendingUp, 
@@ -50,9 +51,11 @@ const App: React.FC = () => {
   const [showCatModal, setShowCatModal] = useState<{ type: 'cat' | 'sub', catId?: string } | null>(null);
   const [catInputValue, setCatInputValue] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [showToAccountPicker, setShowToAccountPicker] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
 
   const [newAccName, setNewAccName] = useState('');
+  const [newAccBalance, setNewAccBalance] = useState('0');
   const [newAccType, setNewAccType] = useState<AccountType>(AccountType.BANK);
   const [newAccCurrency, setNewAccCurrency] = useState<Currency>('IRR');
   const [newAccColor, setNewAccColor] = useState('#2563eb');
@@ -60,8 +63,8 @@ const App: React.FC = () => {
   const [txType, setTxType] = useState<TransactionType>(TransactionType.EXPENSE);
   const [txAmountStr, setTxAmountStr] = useState<string>('0');
   const [txAccount, setTxAccount] = useState<string>(accounts[0]?.id || '');
-  const [txToAccount, setTxToAccount] = useState<string>(accounts[1]?.id || '');
-  const [txCategory, setTxCategory] = useState<string>(categories[0]?.name || '');
+  const [txToAccount, setTxToAccount] = useState<string>('');
+  const [txCategory, setTxCategory] = useState<string>('');
   const [txSubCategory, setTxSubCategory] = useState<string>('');
   const [txNote, setTxNote] = useState<string>('');
   const [txDate, setTxDate] = useState<string>('');
@@ -100,6 +103,7 @@ const App: React.FC = () => {
     setTxNote('');
     setTxDate(getLocalISOString());
     setTxAccount(accounts[0]?.id || '');
+    setTxToAccount(accounts.find(a => a.id !== accounts[0]?.id)?.id || '');
     setTxCategory(categories[0]?.name || '');
     setTxSubCategory('');
     setTxType(TransactionType.EXPENSE);
@@ -107,7 +111,6 @@ const App: React.FC = () => {
   };
 
   const handleEditTransaction = (tx: Transaction) => {
-    // If in selection mode, toggle instead of editing
     if (selectedRecordIds.length > 0) {
       handleToggleRecordSelection(tx.id);
       return;
@@ -116,6 +119,7 @@ const App: React.FC = () => {
     setTxType(tx.type); 
     setTxAmountStr(tx.amount.toString()); 
     setTxAccount(tx.accountId); 
+    setTxToAccount(tx.toAccountId || '');
     setTxCategory(tx.category); 
     setTxSubCategory(tx.subCategory || ''); 
     setTxNote(tx.note || ''); 
@@ -140,6 +144,7 @@ const App: React.FC = () => {
       note: txNote
     };
 
+    // Revert old transaction impact if editing
     if (editingTransaction) {
       setAccounts(prev => prev.map(acc => {
         let b = acc.balance;
@@ -151,11 +156,12 @@ const App: React.FC = () => {
         }
         return { ...acc, balance: b };
       }));
-      setTransactions(transactions.map(t => t.id === editingTransaction.id ? data : t));
+      setTransactions(prev => prev.map(t => t.id === editingTransaction.id ? data : t));
     } else {
-      setTransactions([data, ...transactions]);
+      setTransactions(prev => [data, ...prev]);
     }
 
+    // Apply new transaction impact
     setAccounts(prev => prev.map(acc => {
       let b = acc.balance;
       if (acc.id === txAccount) {
@@ -183,9 +189,33 @@ const App: React.FC = () => {
     }));
   };
 
+  // Fix: Defined handleDeleteTransaction to manage single transaction deletion with confirmation.
   const handleDeleteTransaction = (id: string) => {
-    if (!confirm("Delete permanently?")) return;
+    if (!confirm('Delete this record?')) return;
     performDelete(id);
+  };
+
+  // Fix: Defined handleCloneTransaction to allow duplicating transactions with the current date.
+  const handleCloneTransaction = (tx: Transaction) => {
+    const cloned: Transaction = {
+      ...tx,
+      id: Math.random().toString(36).substr(2, 9),
+      date: new Date().toISOString()
+    };
+    
+    setTransactions(prev => [cloned, ...prev]);
+    
+    // Apply impact of the cloned transaction to accounts
+    setAccounts(prev => prev.map(acc => {
+      let b = acc.balance;
+      if (acc.id === cloned.accountId) {
+        b = cloned.type === TransactionType.INCOME ? b + cloned.amount : b - cloned.amount;
+      }
+      if (cloned.type === TransactionType.TRANSFER && acc.id === cloned.toAccountId) {
+        b = b + cloned.amount;
+      }
+      return { ...acc, balance: b };
+    }));
   };
 
   const handleBulkDelete = () => {
@@ -200,34 +230,20 @@ const App: React.FC = () => {
     );
   };
 
-  const handleCloneTransaction = (tx: Transaction) => {
-    const newTx = { ...tx, id: Math.random().toString(36).substr(2, 9), date: new Date().toISOString() };
-    setTransactions([newTx, ...transactions]);
-    setAccounts(prev => prev.map(acc => {
-      let b = acc.balance;
-      if (acc.id === newTx.accountId) {
-        b = newTx.type === TransactionType.INCOME ? b + newTx.amount : b - newTx.amount;
-      }
-      if (newTx.type === TransactionType.TRANSFER && acc.id === newTx.toAccountId) {
-        b = b + newTx.amount;
-      }
-      return { ...acc, balance: b };
-    }));
-  };
-
   const handleAddAccount = () => {
     if (!newAccName) return;
     const n: Account = { 
       id: Date.now().toString(), 
       name: newAccName, 
       type: newAccType, 
-      balance: 0, 
+      balance: parseFloat(newAccBalance) || 0, 
       currency: newAccCurrency, 
       color: newAccColor 
     };
-    setAccounts([...accounts, n]);
+    setAccounts(prev => [...prev, n]);
     setIsAddingAccount(false);
     setNewAccName('');
+    setNewAccBalance('0');
   };
 
   const handleStartEditAccount = (acc: Account) => {
@@ -238,7 +254,7 @@ const App: React.FC = () => {
 
   const handleUpdateAccount = () => {
     if (tempAccount) {
-      setAccounts(accounts.map(a => a.id === tempAccount.id ? tempAccount : a));
+      setAccounts(prev => prev.map(a => a.id === tempAccount.id ? tempAccount : a));
     }
     setEditingAccount(null);
     setTempAccount(null);
@@ -255,20 +271,20 @@ const App: React.FC = () => {
 
   const deleteCategory = (cat: Category) => {
     if (!confirm(`Delete category "${cat.name}"?`)) return;
-    setCategories(categories.filter(c => c.id !== cat.id));
+    setCategories(prev => prev.filter(c => c.id !== cat.id));
   };
 
   return (
     <div className="max-w-md mx-auto h-[100dvh] bg-[#0e0e10] flex flex-col relative overflow-hidden select-none">
-      {/* Dynamic Header */}
+      {/* Header logic */}
       {selectedRecordIds.length > 0 ? (
-        <header className="p-4 flex items-center justify-between sticky top-0 z-[60] bg-blue-600 safe-top animate-in slide-in-from-top duration-300">
+        <header className="p-4 flex items-center justify-between sticky top-0 z-[60] bg-blue-600 safe-top animate-in fade-in slide-in-from-top duration-200">
           <div className="flex items-center gap-4">
             <button onClick={() => setSelectedRecordIds([])} className="p-1"><X className="w-6 h-6 text-white" /></button>
             <span className="text-xl font-bold text-white">{selectedRecordIds.length} Selected</span>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleBulkDelete} className="p-3 bg-white/10 active:bg-white/20 rounded-2xl transition-colors"><Trash2 className="w-6 h-6 text-white" /></button>
+            <button onClick={handleBulkDelete} className="p-2 bg-white/10 rounded-xl active:bg-white/20"><Trash2 className="w-6 h-6 text-white" /></button>
           </div>
         </header>
       ) : (
@@ -397,7 +413,7 @@ const App: React.FC = () => {
         <button onClick={() => setActiveView('categories')} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'categories' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><PieChart className="w-6 h-6" /><span className="text-[10px] font-bold uppercase tracking-tighter">Cats</span></button>
       </nav>
 
-      {/* Modals remain same but use handleStartEditAccount correctly */}
+      {/* Transaction Modal */}
       {isAddingTransaction && (
         <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col safe-top animate-in slide-in-from-bottom duration-300">
            <div className="bg-blue-600 p-4">
@@ -417,7 +433,7 @@ const App: React.FC = () => {
                 ))}
               </div>
            </div>
-           {/* Form content */}
+
            <div className="flex-1 bg-blue-600 flex flex-col items-center justify-center px-10 relative">
               <div className="flex items-center gap-4 text-white mb-10">
                 <span className="text-4xl opacity-50">{txType === 'INCOME' ? '+' : txType === 'TRANSFER' ? '' : '−'}</span>
@@ -432,23 +448,162 @@ const App: React.FC = () => {
                       {accounts.map(acc => <option key={acc.id} value={acc.id} className="text-black">{acc.name}</option>)}
                     </select>
                  </div>
-                 <button onClick={() => setShowCategoryPicker(true)} className="flex flex-col items-center bg-blue-700/30 p-4 rounded-3xl border border-blue-400/20">
-                    <span className="text-[8px] font-bold text-blue-100 uppercase tracking-widest opacity-60 mb-2">Category</span>
-                    <span className="text-white font-bold truncate w-full text-center">{txSubCategory ? txSubCategory : txCategory}</span>
-                 </button>
+                 
+                 {txType === TransactionType.TRANSFER ? (
+                   <button onClick={() => setShowToAccountPicker(true)} className="flex flex-col items-center bg-blue-700/30 p-4 rounded-3xl border border-blue-400/20">
+                      <span className="text-[8px] font-bold text-blue-100 uppercase tracking-widest opacity-60 mb-2">To Account</span>
+                      <span className="text-white font-bold truncate w-full text-center">
+                        {accounts.find(a => a.id === txToAccount)?.name || 'Select'}
+                      </span>
+                   </button>
+                 ) : (
+                   <button onClick={() => setShowCategoryPicker(true)} className="flex flex-col items-center bg-blue-700/30 p-4 rounded-3xl border border-blue-400/20">
+                      <span className="text-[8px] font-bold text-blue-100 uppercase tracking-widest opacity-60 mb-2">Category</span>
+                      <span className="text-white font-bold truncate w-full text-center">
+                        {txSubCategory ? txSubCategory : (txCategory || 'Select')}
+                      </span>
+                   </button>
+                 )}
               </div>
            </div>
+
            <div className="bg-[#1c1c1f] p-4">
               <div className="grid grid-cols-4 gap-1 mb-4">
                 {[7,8,9,'/',4,5,6,'*',1,2,3,'-', '.', 0, 'DEL', '+'].map((key, idx) => (
-                  <button key={idx} onClick={() => handleKeypadPress(key.toString())} className={`h-14 flex items-center justify-center rounded-xl text-xl font-medium active:bg-zinc-800 transition-colors ${typeof key === 'number' || key === '.' ? 'text-zinc-100' : 'text-zinc-500 bg-zinc-900/30'}`}>{key === 'DEL' ? <Delete className="w-5 h-5" /> : key}</button>
+                  <button 
+                    key={idx}
+                    onClick={() => handleKeypadPress(key.toString())}
+                    className={`h-14 flex items-center justify-center rounded-xl text-xl font-medium active:bg-zinc-800 transition-colors ${typeof key === 'number' || key === '.' ? 'text-zinc-100' : 'text-zinc-500 bg-zinc-900/30'}`}
+                  >
+                    {key === 'DEL' ? <Delete className="w-5 h-5" /> : key}
+                  </button>
                 ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                 <div className="bg-zinc-900/50 rounded-xl px-4 py-3 flex items-center gap-2 border border-zinc-800">
+                    <Calendar className="w-4 h-4 text-zinc-600" />
+                    <input type="datetime-local" value={txDate} onChange={e => setTxDate(e.target.value)} className="bg-transparent outline-none text-[10px] font-bold text-zinc-400 w-full" />
+                 </div>
+                 <div className="bg-zinc-900/50 rounded-xl px-4 py-3 flex items-center gap-2 border border-zinc-800">
+                    <Edit2 className="w-4 h-4 text-zinc-600" />
+                    <input placeholder="Note..." value={txNote} onChange={e => setTxNote(e.target.value)} className="bg-transparent outline-none text-[10px] font-bold text-zinc-400 w-full" />
+                 </div>
               </div>
            </div>
         </div>
       )}
 
-      {/* Other Modals (Account Manager, etc.) */}
+      {/* Account Settings / New Account Modal */}
+      {(isAddingAccount || editingAccount) && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center p-6 bg-black/95 backdrop-blur-md">
+           <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 space-y-6 animate-in zoom-in duration-200">
+             <div className="flex justify-between items-center">
+               <h3 className="text-xl font-bold">{isAddingAccount ? 'New Account' : 'Edit Account'}</h3>
+               <button onClick={() => {setIsAddingAccount(false); setEditingAccount(null); setTempAccount(null);}}><X className="w-6 h-6 text-zinc-500" /></button>
+             </div>
+             <div className="space-y-4">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-4">Account Name</span>
+                  <input 
+                    placeholder="Wallet Name" 
+                    value={isAddingAccount ? newAccName : tempAccount?.name || ''} 
+                    onChange={e => isAddingAccount ? setNewAccName(e.target.value) : setTempAccount(prev => prev ? {...prev, name: e.target.value} : null)} 
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 outline-none focus:border-blue-500 font-bold" 
+                  />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-4">Initial Balance</span>
+                  <input 
+                    type="number"
+                    placeholder="0" 
+                    value={isAddingAccount ? newAccBalance : tempAccount?.balance || '0'} 
+                    onChange={e => isAddingAccount ? setNewAccBalance(e.target.value) : setTempAccount(prev => prev ? {...prev, balance: parseFloat(e.target.value) || 0} : null)} 
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 outline-none focus:border-blue-500 font-bold" 
+                  />
+                </div>
+               <div className="space-y-2">
+                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-4 block">Account Color</span>
+                 <input 
+                    type="color" 
+                    value={isAddingAccount ? newAccColor : tempAccount?.color || '#2563eb'} 
+                    onChange={e => isAddingAccount ? setNewAccColor(e.target.value) : setTempAccount(prev => prev ? {...prev, color: e.target.value} : null)} 
+                    className="w-full h-14 bg-transparent border-none cursor-pointer p-0 rounded-2xl overflow-hidden" 
+                 />
+               </div>
+             </div>
+             <button onClick={isAddingAccount ? handleAddAccount : handleUpdateAccount} className="w-full py-5 bg-blue-600 rounded-2xl font-black text-white shadow-lg active:scale-95 transition-all">
+               {isAddingAccount ? 'Create Account' : 'Update Wallet'}
+             </button>
+           </div>
+        </div>
+      )}
+
+      {/* Category Picker Modal */}
+      {showCategoryPicker && (
+        <div className="fixed inset-0 z-[150] bg-black/95 backdrop-blur-xl flex flex-col p-6 safe-top animate-in fade-in zoom-in duration-200">
+           <div className="flex items-center justify-between mb-6">
+             <h3 className="text-xl font-bold text-white">Select Category</h3>
+             <button onClick={() => { setShowCategoryPicker(false); setCategorySearch(''); }} className="p-2 bg-zinc-900 rounded-full"><X className="w-6 h-6 text-white" /></button>
+           </div>
+           <div className="relative mb-6">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+              <input 
+                autoFocus
+                placeholder="Search categories..." 
+                value={categorySearch} 
+                onChange={e => setCategorySearch(e.target.value)} 
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-blue-600 font-medium text-white"
+              />
+           </div>
+           <div className="flex-1 overflow-y-auto no-scrollbar space-y-1">
+              {filteredFlatCategories.map((item, idx) => (
+                <button 
+                  key={idx}
+                  onClick={() => {
+                    setTxCategory(item.main);
+                    setTxSubCategory(item.sub || '');
+                    setShowCategoryPicker(false);
+                    setCategorySearch('');
+                  }}
+                  className="w-full text-left p-4 rounded-2xl hover:bg-zinc-800/50 flex items-center justify-between border border-transparent hover:border-zinc-800 group transition-all"
+                >
+                  <span className={`font-bold ${item.sub ? 'text-zinc-400 text-sm' : 'text-zinc-100'}`}>{item.display}</span>
+                  <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-blue-500" />
+                </button>
+              ))}
+           </div>
+        </div>
+      )}
+
+      {/* To Account Picker Modal */}
+      {showToAccountPicker && (
+        <div className="fixed inset-0 z-[150] bg-black/95 backdrop-blur-xl flex flex-col p-6 safe-top animate-in fade-in zoom-in duration-200">
+           <div className="flex items-center justify-between mb-6">
+             <h3 className="text-xl font-bold text-white">Select Destination</h3>
+             <button onClick={() => setShowToAccountPicker(false)} className="p-2 bg-zinc-900 rounded-full"><X className="w-6 h-6 text-white" /></button>
+           </div>
+           <div className="flex-1 overflow-y-auto no-scrollbar space-y-2">
+              {accounts.filter(a => a.id !== txAccount).map(acc => (
+                <button 
+                  key={acc.id}
+                  onClick={() => {
+                    setTxToAccount(acc.id);
+                    setShowToAccountPicker(false);
+                  }}
+                  className="w-full flex items-center justify-between p-5 bg-zinc-900/50 border border-zinc-800 rounded-[2rem] hover:border-blue-500 transition-all"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: acc.color }} />
+                    <span className="font-bold text-lg">{acc.name}</span>
+                  </div>
+                  <span className="text-zinc-500 font-medium">{acc.currency}</span>
+                </button>
+              ))}
+           </div>
+        </div>
+      )}
+
+      {/* Account Manager Modal */}
       {showAccountManager && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
           <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-6 space-y-6">
@@ -469,7 +624,9 @@ const App: React.FC = () => {
                  </div>
                ))}
             </div>
-            <button onClick={() => { setIsAddingAccount(true); setShowAccountManager(false); }} className="w-full py-4 bg-zinc-800 border border-zinc-700 rounded-2xl font-bold text-zinc-300 hover:text-white flex items-center justify-center gap-2"><Plus className="w-5 h-5" /> New Account</button>
+            <button onClick={() => { setIsAddingAccount(true); setShowAccountManager(false); }} className="w-full py-4 bg-zinc-800 border border-zinc-700 rounded-2xl font-bold text-zinc-300 hover:text-white flex items-center justify-center gap-2">
+              <Plus className="w-5 h-5" /> New Account
+            </button>
           </div>
         </div>
       )}
