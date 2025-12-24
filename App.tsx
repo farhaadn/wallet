@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Menu, Bell, Settings, Plus, LayoutGrid, List, TrendingUp, 
@@ -28,12 +29,14 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
   });
 
-  // Load selected accounts from storage or default to first one if none selected
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('zw_selected_accounts');
     if (saved) return JSON.parse(saved);
     return accounts.length > 0 ? [accounts[0].id] : [];
   });
+
+  // State for multiple record selection
+  const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
 
   useEffect(() => localStorage.setItem('zw_accounts', JSON.stringify(accounts)), [accounts]);
   useEffect(() => localStorage.setItem('zw_transactions', JSON.stringify(transactions)), [transactions]);
@@ -51,6 +54,12 @@ const App: React.FC = () => {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
 
+  // Fix: Added missing state variables for account creation
+  const [newAccName, setNewAccName] = useState('');
+  const [newAccType, setNewAccType] = useState<AccountType>(AccountType.BANK);
+  const [newAccCurrency, setNewAccCurrency] = useState<Currency>('IRR');
+  const [newAccColor, setNewAccColor] = useState('#2563eb');
+
   // Transaction Form State
   const [txType, setTxType] = useState<TransactionType>(TransactionType.EXPENSE);
   const [txAmountStr, setTxAmountStr] = useState<string>('0');
@@ -60,12 +69,6 @@ const App: React.FC = () => {
   const [txSubCategory, setTxSubCategory] = useState<string>('');
   const [txNote, setTxNote] = useState<string>('');
   const [txDate, setTxDate] = useState<string>('');
-
-  // Account Form State
-  const [newAccName, setNewAccName] = useState('');
-  const [newAccType, setNewAccType] = useState<AccountType>(AccountType.BANK);
-  const [newAccCurrency, setNewAccCurrency] = useState<Currency>('IRR');
-  const [newAccColor, setNewAccColor] = useState('#2563eb');
 
   const filteredTransactions = useMemo(() => {
     return transactions
@@ -108,6 +111,10 @@ const App: React.FC = () => {
   };
 
   const handleEditTransaction = (tx: Transaction) => {
+    if (selectedRecordIds.length > 0) {
+      handleToggleRecordSelection(tx.id);
+      return;
+    }
     setEditingTransaction(tx); 
     setTxType(tx.type); 
     setTxAmountStr(tx.amount.toString()); 
@@ -169,9 +176,13 @@ const App: React.FC = () => {
 
   const handleDeleteTransaction = (id: string) => {
     if (!confirm("Delete permanently?")) return;
+    performDelete(id);
+  };
+
+  const performDelete = (id: string) => {
     const tx = transactions.find(t => t.id === id);
     if (!tx) return;
-    setTransactions(transactions.filter(t => t.id !== id));
+    setTransactions(prev => prev.filter(t => t.id !== id));
     setAccounts(prev => prev.map(acc => {
       let b = acc.balance;
       if (acc.id === tx.accountId) b = tx.type === TransactionType.INCOME ? b - tx.amount : b + tx.amount;
@@ -179,6 +190,18 @@ const App: React.FC = () => {
       return { ...acc, balance: b };
     }));
     setIsAddingTransaction(false);
+  };
+
+  const handleBulkDelete = () => {
+    if (!confirm(`Delete ${selectedRecordIds.length} records?`)) return;
+    selectedRecordIds.forEach(id => performDelete(id));
+    setSelectedRecordIds([]);
+  };
+
+  const handleToggleRecordSelection = (id: string) => {
+    setSelectedRecordIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
   };
 
   const handleCloneTransaction = (tx: Transaction) => {
@@ -211,7 +234,6 @@ const App: React.FC = () => {
     setNewAccName('');
   };
 
-  // Fix: Added missing handleStartEditAccount function to properly initialize account editing
   const handleStartEditAccount = (acc: Account) => {
     setEditingAccount(acc);
     setTempAccount({ ...acc });
@@ -235,17 +257,6 @@ const App: React.FC = () => {
     });
   };
 
-  const submitCatModal = () => {
-    if (!catInputValue) return;
-    if (showCatModal?.type === 'cat') {
-      setCategories([...categories, { id: Date.now().toString(), name: catInputValue, subCategories: [] }]);
-    } else if (showCatModal?.type === 'sub') {
-      setCategories(categories.map(c => c.id === showCatModal.catId ? { ...c, subCategories: [...c.subCategories, catInputValue] } : c));
-    }
-    setCatInputValue('');
-    setShowCatModal(null);
-  };
-
   const deleteCategory = (cat: Category) => {
     if (!confirm(`Delete category "${cat.name}"?`)) return;
     setCategories(categories.filter(c => c.id !== cat.id));
@@ -253,13 +264,26 @@ const App: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto h-[100dvh] bg-[#0e0e10] flex flex-col relative overflow-hidden select-none">
-      <header className="p-4 flex items-center justify-between sticky top-0 z-30 bg-[#0e0e10]/90 backdrop-blur-md safe-top border-b border-zinc-900/50">
-        <div className="flex items-center gap-3">
-          <Menu className="w-6 h-6 text-zinc-400" />
-          <h1 className="text-xl font-black tracking-tight text-white uppercase">ZenWallet</h1>
-        </div>
-        <Bell className="w-6 h-6 text-zinc-400" />
-      </header>
+      {/* Header logic: Check if we are in bulk selection mode */}
+      {selectedRecordIds.length > 0 ? (
+        <header className="p-4 flex items-center justify-between sticky top-0 z-[60] bg-blue-600 safe-top animate-in fade-in slide-in-from-top duration-200">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setSelectedRecordIds([])} className="p-1"><X className="w-6 h-6 text-white" /></button>
+            <span className="text-xl font-bold text-white">{selectedRecordIds.length} Selected</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={handleBulkDelete} className="p-2 bg-white/10 rounded-xl"><Trash2 className="w-6 h-6 text-white" /></button>
+          </div>
+        </header>
+      ) : (
+        <header className="p-4 flex items-center justify-between sticky top-0 z-30 bg-[#0e0e10]/90 backdrop-blur-md safe-top border-b border-zinc-900/50">
+          <div className="flex items-center gap-3">
+            <Menu className="w-6 h-6 text-zinc-400" />
+            <h1 className="text-xl font-black tracking-tight text-white uppercase">ZenWallet</h1>
+          </div>
+          <Bell className="w-6 h-6 text-zinc-400" />
+        </header>
+      )}
 
       <main className="flex-1 overflow-hidden">
         {activeView === 'dashboard' && (
@@ -299,6 +323,8 @@ const App: React.FC = () => {
                     onClick={() => handleEditTransaction(tx)}
                     onDelete={() => handleDeleteTransaction(tx.id)}
                     onClone={() => handleCloneTransaction(tx)}
+                    onLongPress={() => handleToggleRecordSelection(tx.id)}
+                    isSelected={selectedRecordIds.includes(tx.id)}
                    />
                  ))}
                  {filteredTransactions.length === 0 && <div className="p-12 text-center text-zinc-600 text-sm italic">No records for selected accounts.</div>}
@@ -330,6 +356,8 @@ const App: React.FC = () => {
                     onClick={() => handleEditTransaction(tx)}
                     onDelete={() => handleDeleteTransaction(tx.id)}
                     onClone={() => handleCloneTransaction(tx)}
+                    onLongPress={() => handleToggleRecordSelection(tx.id)}
+                    isSelected={selectedRecordIds.includes(tx.id)}
                   />
                 )) : <div className="p-20 text-center text-zinc-600 italic">No records found.</div>}
               </div>
@@ -364,19 +392,18 @@ const App: React.FC = () => {
       </main>
 
       {/* Main Floating Action Button */}
-      <button onClick={handleOpenNewTransaction} className="fixed bottom-24 right-6 w-16 h-16 bg-blue-600 rounded-2xl shadow-2xl flex items-center justify-center text-white z-50 hover:scale-105 active:scale-90 transition-all border-t border-white/20"><Plus className="w-10 h-10" /></button>
+      <button onClick={handleOpenNewTransaction} className={`fixed bottom-24 right-6 w-16 h-16 bg-blue-600 rounded-2xl shadow-2xl flex items-center justify-center text-white z-50 hover:scale-105 active:scale-90 transition-all border-t border-white/20 ${selectedRecordIds.length > 0 ? 'scale-0' : 'scale-100'}`}><Plus className="w-10 h-10" /></button>
 
       {/* Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#0e0e10]/95 backdrop-blur-2xl border-t border-zinc-900 flex justify-around p-3 pb-8 z-40 safe-bottom">
+      <nav className={`fixed bottom-0 left-0 right-0 bg-[#0e0e10]/95 backdrop-blur-2xl border-t border-zinc-900 flex justify-around p-3 pb-8 z-40 safe-bottom transition-transform duration-300 ${selectedRecordIds.length > 0 ? 'translate-y-full' : 'translate-y-0'}`}>
         <button onClick={() => setActiveView('dashboard')} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'dashboard' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><LayoutGrid className="w-6 h-6" /><span className="text-[10px] font-bold uppercase tracking-tighter">Home</span></button>
         <button onClick={() => setActiveView('records')} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'records' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><ArrowLeftRight className="w-6 h-6" /><span className="text-[10px] font-bold uppercase tracking-tighter">Records</span></button>
         <button onClick={() => setActiveView('categories')} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'categories' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><PieChart className="w-6 h-6" /><span className="text-[10px] font-bold uppercase tracking-tighter">Cats</span></button>
       </nav>
 
-      {/* Full-Screen Transaction Modal with Calculator */}
+      {/* Full-Screen Transaction Modal */}
       {isAddingTransaction && (
         <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col safe-top animate-in slide-in-from-bottom duration-300">
-           {/* Top Bar */}
            <div className="bg-blue-600 p-4">
               <div className="flex items-center justify-between mb-8">
                 <button onClick={() => setIsAddingTransaction(false)}><X className="w-6 h-6 text-white" /></button>
@@ -395,7 +422,6 @@ const App: React.FC = () => {
               </div>
            </div>
 
-           {/* Amount and Basic Info */}
            <div className="flex-1 bg-blue-600 flex flex-col items-center justify-center px-10 relative">
               <div className="flex items-center gap-4 text-white mb-10">
                 <span className="text-4xl opacity-50">{txType === 'INCOME' ? '+' : txType === 'TRANSFER' ? '' : '−'}</span>
@@ -403,7 +429,6 @@ const App: React.FC = () => {
                 <span className="text-xl font-bold opacity-70">{accounts.find(a => a.id === txAccount)?.currency || 'IRR'}</span>
               </div>
 
-              {/* Boxed Selectors side-by-side */}
               <div className="w-full grid grid-cols-2 gap-4">
                  <div className="flex flex-col items-center bg-blue-700/30 p-4 rounded-3xl border border-blue-400/20">
                     <span className="text-[8px] font-bold text-blue-100 uppercase tracking-widest opacity-60 mb-2">Account</span>
@@ -418,7 +443,6 @@ const App: React.FC = () => {
               </div>
            </div>
 
-           {/* Keypad and Metadata */}
            <div className="bg-[#1c1c1f] p-4">
               <div className="grid grid-cols-4 gap-1 mb-4">
                 {[7,8,9,'/',4,5,6,'*',1,2,3,'-', '.', 0, 'DEL', '+'].map((key, idx) => (
