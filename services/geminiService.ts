@@ -1,12 +1,11 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Transaction, Account } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Fix: Initializing GoogleGenAI with the required named parameter and using process.env.API_KEY directly.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export async function getFinancialAdvice(transactions: Transaction[], accounts: Account[]) {
-  if (!process.env.API_KEY) return "AI Insights disabled: Missing API Key.";
-
+  // Fix: Assuming the API key is provided correctly by the environment as per the guidelines.
   try {
     const summary = transactions.map(t => `${t.date}: ${t.type} ${t.amount} ${t.currency} for ${t.category}`).join('\n');
     const accountStr = accounts.map(a => `${a.name}: ${a.balance} ${a.currency}`).join('\n');
@@ -21,6 +20,7 @@ export async function getFinancialAdvice(transactions: Transaction[], accounts: 
       ${summary}
     `;
 
+    // Fix: Using the recommended gemini-3-flash-preview model for general text tasks.
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,

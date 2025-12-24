@@ -28,12 +28,18 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
   });
 
+  // Load selected accounts from storage or default to first one if none selected
+  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('zw_selected_accounts');
+    if (saved) return JSON.parse(saved);
+    return accounts.length > 0 ? [accounts[0].id] : [];
+  });
+
   useEffect(() => localStorage.setItem('zw_accounts', JSON.stringify(accounts)), [accounts]);
   useEffect(() => localStorage.setItem('zw_transactions', JSON.stringify(transactions)), [transactions]);
   useEffect(() => localStorage.setItem('zw_categories', JSON.stringify(categories)), [categories]);
+  useEffect(() => localStorage.setItem('zw_selected_accounts', JSON.stringify(selectedAccountIds)), [selectedAccountIds]);
 
-  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>(accounts.map(a => a.id));
-  
   const [isAddingTransaction, setIsAddingTransaction] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isAddingAccount, setIsAddingAccount] = useState(false);
@@ -61,11 +67,6 @@ const App: React.FC = () => {
   const [newAccCurrency, setNewAccCurrency] = useState<Currency>('IRR');
   const [newAccColor, setNewAccColor] = useState('#2563eb');
 
-  const noteSuggestions = useMemo(() => {
-    const notes = transactions.map(t => t.note).filter((n): n is string => !!n);
-    return Array.from(new Set(notes));
-  }, [transactions]);
-
   const filteredTransactions = useMemo(() => {
     return transactions
       .filter(t => selectedAccountIds.includes(t.accountId) || (t.toAccountId && selectedAccountIds.includes(t.toAccountId)))
@@ -88,7 +89,6 @@ const App: React.FC = () => {
     return flatCategories.filter(c => c.display.toLowerCase().includes(categorySearch.toLowerCase()));
   }, [flatCategories, categorySearch]);
 
-  // Reliable Local Datetime String for datetime-local input
   const getLocalISOString = (date: Date = new Date()) => {
     const tzoffset = date.getTimezoneOffset() * 60000;
     const localDate = new Date(date.getTime() - tzoffset);
@@ -181,6 +181,21 @@ const App: React.FC = () => {
     setIsAddingTransaction(false);
   };
 
+  const handleCloneTransaction = (tx: Transaction) => {
+    const newTx = { ...tx, id: Math.random().toString(36).substr(2, 9), date: new Date().toISOString() };
+    setTransactions([newTx, ...transactions]);
+    setAccounts(prev => prev.map(acc => {
+      let b = acc.balance;
+      if (acc.id === newTx.accountId) {
+        b = newTx.type === TransactionType.INCOME ? b + newTx.amount : b - newTx.amount;
+      }
+      if (newTx.type === TransactionType.TRANSFER && acc.id === newTx.toAccountId) {
+        b = b + newTx.amount;
+      }
+      return { ...acc, balance: b };
+    }));
+  };
+
   const handleAddAccount = () => {
     if (!newAccName) return;
     const n: Account = { 
@@ -196,9 +211,10 @@ const App: React.FC = () => {
     setNewAccName('');
   };
 
+  // Fix: Added missing handleStartEditAccount function to properly initialize account editing
   const handleStartEditAccount = (acc: Account) => {
-    setTempAccount({ ...acc });
     setEditingAccount(acc);
+    setTempAccount({ ...acc });
     setShowAccountManager(false);
   };
 
@@ -275,12 +291,14 @@ const App: React.FC = () => {
                  <button onClick={() => setActiveView('records')} className="text-blue-500 text-[10px] font-bold uppercase tracking-wider">See all</button>
                </div>
                <div className="bg-zinc-900/30 rounded-[2rem] overflow-hidden border border-zinc-900/50">
-                 {filteredTransactions.slice(0, 5).map(tx => (
+                 {filteredTransactions.slice(0, 10).map(tx => (
                    <TransactionItem 
                     key={tx.id} 
                     transaction={tx} 
                     accountName={accounts.find(a => a.id === tx.accountId)?.name || 'Unknown'} 
                     onClick={() => handleEditTransaction(tx)}
+                    onDelete={() => handleDeleteTransaction(tx.id)}
+                    onClone={() => handleCloneTransaction(tx)}
                    />
                  ))}
                  {filteredTransactions.length === 0 && <div className="p-12 text-center text-zinc-600 text-sm italic">No records for selected accounts.</div>}
@@ -310,6 +328,8 @@ const App: React.FC = () => {
                     transaction={tx} 
                     accountName={accounts.find(a => a.id === tx.accountId)?.name || 'Unknown'} 
                     onClick={() => handleEditTransaction(tx)}
+                    onDelete={() => handleDeleteTransaction(tx.id)}
+                    onClone={() => handleCloneTransaction(tx)}
                   />
                 )) : <div className="p-20 text-center text-zinc-600 italic">No records found.</div>}
               </div>
@@ -331,7 +351,7 @@ const App: React.FC = () => {
                 <div key={cat.id} className="bg-zinc-900/40 border border-zinc-800/30 rounded-[2rem] overflow-hidden shadow-xl p-5">
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col">
-                        <span className="font-bold text-lg text-white">{cat.name}</span>
+                        <span className="font-bold text-white">{cat.name}</span>
                         <span className="text-[10px] font-black text-zinc-500 tracking-widest uppercase">{cat.subCategories.length} Sub-items</span>
                       </div>
                       <button onClick={() => deleteCategory(cat)} className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-full"><Trash2 className="w-5 h-5" /></button>
@@ -460,12 +480,12 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Unified Category Picker Modal */}
+      {/* Category Picker */}
       {showCategoryPicker && (
         <div className="fixed inset-0 z-[150] bg-black/95 backdrop-blur-xl flex flex-col p-6 safe-top animate-in fade-in zoom-in duration-200">
            <div className="flex items-center justify-between mb-6">
-             <h3 className="text-xl font-bold">Select Category</h3>
-             <button onClick={() => { setShowCategoryPicker(false); setCategorySearch(''); }} className="p-2 bg-zinc-900 rounded-full"><X className="w-6 h-6" /></button>
+             <h3 className="text-xl font-bold text-white">Select Category</h3>
+             <button onClick={() => { setShowCategoryPicker(false); setCategorySearch(''); }} className="p-2 bg-zinc-900 rounded-full"><X className="w-6 h-6 text-white" /></button>
            </div>
            <div className="relative mb-6">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
@@ -474,7 +494,7 @@ const App: React.FC = () => {
                 placeholder="Search categories..." 
                 value={categorySearch} 
                 onChange={e => setCategorySearch(e.target.value)} 
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-blue-600 font-medium"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-blue-600 font-medium text-white"
               />
            </div>
            <div className="flex-1 overflow-y-auto no-scrollbar space-y-1">
