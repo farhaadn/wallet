@@ -47,7 +47,7 @@ const App: React.FC = () => {
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   
-  // Modals for Category management (instead of prompt)
+  // Modals for Category management
   const [showCatModal, setShowCatModal] = useState<{ type: 'cat' | 'sub', catId?: string } | null>(null);
   const [catInputValue, setCatInputValue] = useState('');
 
@@ -97,11 +97,16 @@ const App: React.FC = () => {
       note: txNote
     };
 
+    // Revert old transaction impacts on balance
     if (editingTransaction) {
       setAccounts(prev => prev.map(acc => {
         let b = acc.balance;
-        if (acc.id === editingTransaction.accountId) b = editingTransaction.type === TransactionType.INCOME ? b - editingTransaction.amount : b + editingTransaction.amount;
-        if (editingTransaction.type === TransactionType.TRANSFER && acc.id === editingTransaction.toAccountId) b = b - editingTransaction.amount;
+        if (acc.id === editingTransaction.accountId) {
+          b = editingTransaction.type === TransactionType.INCOME ? b - editingTransaction.amount : b + editingTransaction.amount;
+        }
+        if (editingTransaction.type === TransactionType.TRANSFER && acc.id === editingTransaction.toAccountId) {
+          b = b - editingTransaction.amount;
+        }
         return { ...acc, balance: b };
       }));
       setTransactions(transactions.map(t => t.id === editingTransaction.id ? data : t));
@@ -109,10 +114,15 @@ const App: React.FC = () => {
       setTransactions([data, ...transactions]);
     }
 
+    // Apply new transaction impacts
     setAccounts(prev => prev.map(acc => {
       let b = acc.balance;
-      if (acc.id === txAccount) b = txType === TransactionType.INCOME ? b + txAmount : b - txAmount;
-      if (txType === TransactionType.TRANSFER && acc.id === txToAccount) b = b + txAmount;
+      if (acc.id === txAccount) {
+        b = txType === TransactionType.INCOME ? b + txAmount : b - txAmount;
+      }
+      if (txType === TransactionType.TRANSFER && acc.id === txToAccount) {
+        b = b + txAmount;
+      }
       return { ...acc, balance: b };
     }));
 
@@ -123,7 +133,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteTransaction = (id: string) => {
-    if (!confirm("Delete this record?")) return;
+    if (!confirm("Delete this record permanently?")) return;
     const tx = transactions.find(t => t.id === id);
     if (!tx) return;
     setTransactions(transactions.filter(t => t.id !== id));
@@ -137,7 +147,14 @@ const App: React.FC = () => {
 
   const handleAddAccount = () => {
     if (!newAccName) return;
-    const n: Account = { id: Date.now().toString(), name: newAccName, type: newAccType, balance: 0, currency: newAccCurrency, color: newAccColor };
+    const n: Account = { 
+      id: Date.now().toString(), 
+      name: newAccName, 
+      type: newAccType, 
+      balance: 0, 
+      currency: newAccCurrency, 
+      color: newAccColor 
+    };
     setAccounts([...accounts, n]);
     setIsAddingAccount(false);
     setNewAccName('');
@@ -146,7 +163,10 @@ const App: React.FC = () => {
   const submitCatModal = () => {
     if (!catInputValue) return;
     if (showCatModal?.type === 'cat') {
-      if (categories.some(c => c.name.toLowerCase() === catInputValue.toLowerCase())) { alert("Exists!"); return; }
+      if (categories.some(c => c.name.toLowerCase() === catInputValue.toLowerCase())) {
+        alert("This category already exists.");
+        return;
+      }
       setCategories([...categories, { id: Date.now().toString(), name: catInputValue, subCategories: [] }]);
     } else if (showCatModal?.type === 'sub') {
       setCategories(categories.map(c => c.id === showCatModal.catId ? { ...c, subCategories: [...c.subCategories, catInputValue] } : c));
@@ -156,13 +176,19 @@ const App: React.FC = () => {
   };
 
   const deleteCategory = (cat: Category) => {
-    if (transactions.some(t => t.category === cat.name)) { alert("Used in records. Delete records first."); return; }
+    if (transactions.some(t => t.category === cat.name)) {
+      alert("Cannot delete: This category is used in existing records.");
+      return;
+    }
     if (!confirm(`Delete category "${cat.name}"?`)) return;
     setCategories(categories.filter(c => c.id !== cat.id));
   };
 
   const deleteSubCategory = (cat: Category, sub: string) => {
-    if (transactions.some(t => t.category === cat.name && t.subCategory === sub)) { alert("Used in records."); return; }
+    if (transactions.some(t => t.category === cat.name && t.subCategory === sub)) {
+      alert("Cannot delete: This sub-category is used in existing records.");
+      return;
+    }
     if (!confirm(`Delete "${sub}"?`)) return;
     setCategories(categories.map(c => c.id === cat.id ? { ...c, subCategories: c.subCategories.filter(s => s !== sub) } : c));
   };
@@ -187,7 +213,11 @@ const App: React.FC = () => {
             <div className="grid grid-cols-3 gap-3">
               {accounts.map(acc => (
                 <div key={acc.id} className="relative group">
-                  <AccountCard account={acc} isSelected={selectedAccountIds.includes(acc.id)} onClick={() => setSelectedAccountIds(prev => prev.includes(acc.id) ? prev.filter(x => x !== acc.id) : [...prev, acc.id])} />
+                  <AccountCard 
+                    account={acc} 
+                    isSelected={selectedAccountIds.includes(acc.id)} 
+                    onClick={() => setSelectedAccountIds(prev => prev.includes(acc.id) ? prev.filter(x => x !== acc.id) : [...prev, acc.id])} 
+                  />
                   <button onClick={(e) => { e.stopPropagation(); setEditingAccount(acc); }} className="absolute -top-1 -right-1 p-1 bg-zinc-800 rounded-full border border-zinc-700 z-10"><Edit2 className="w-3 h-3 text-zinc-400" /></button>
                 </div>
               ))}
@@ -204,7 +234,7 @@ const App: React.FC = () => {
 
             <div className="space-y-4">
                <div className="flex items-center justify-between">
-                 <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-widest">Activity</h2>
+                 <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-widest">Recent Activity</h2>
                  <button onClick={() => setActiveView('records')} className="text-blue-500 text-xs font-bold uppercase">See all</button>
                </div>
                <div className="bg-zinc-900/40 rounded-3xl overflow-hidden border border-zinc-900/50">
@@ -212,7 +242,17 @@ const App: React.FC = () => {
                    <div key={tx.id} className="relative group">
                      <TransactionItem transaction={tx} accountName={accounts.find(a => a.id === tx.accountId)?.name || 'Unknown'} />
                      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => { setEditingTransaction(tx); setTxType(tx.type); setTxAmount(tx.amount); setTxAccount(tx.accountId); setTxCategory(tx.category); setTxSubCategory(tx.subCategory || ''); setTxNote(tx.note || ''); setTxDate(new Date(tx.date).toISOString().slice(0,16)); setIsAddingTransaction(true); }} className="p-2 bg-zinc-800 rounded-full text-blue-400"><Edit2 className="w-4 h-4" /></button>
+                        <button onClick={() => { 
+                          setEditingTransaction(tx); 
+                          setTxType(tx.type); 
+                          setTxAmount(tx.amount); 
+                          setTxAccount(tx.accountId); 
+                          setTxCategory(tx.category); 
+                          setTxSubCategory(tx.subCategory || ''); 
+                          setTxNote(tx.note || ''); 
+                          setTxDate(new Date(tx.date).toISOString().slice(0,16)); 
+                          setIsAddingTransaction(true); 
+                        }} className="p-2 bg-zinc-800 rounded-full text-blue-400"><Edit2 className="w-4 h-4" /></button>
                         <button onClick={() => handleDeleteTransaction(tx.id)} className="p-2 bg-zinc-800 rounded-full text-rose-500"><Trash2 className="w-4 h-4" /></button>
                      </div>
                    </div>
@@ -242,7 +282,17 @@ const App: React.FC = () => {
                   <div key={tx.id} className="relative group">
                     <TransactionItem transaction={tx} accountName={accounts.find(a => a.id === tx.accountId)?.name || 'Unknown'} />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => { setEditingTransaction(tx); setTxType(tx.type); setTxAmount(tx.amount); setTxAccount(tx.accountId); setTxCategory(tx.category); setTxSubCategory(tx.subCategory || ''); setTxNote(tx.note || ''); setTxDate(new Date(tx.date).toISOString().slice(0,16)); setIsAddingTransaction(true); }} className="p-2 bg-zinc-800 rounded-full text-blue-400"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => { 
+                        setEditingTransaction(tx); 
+                        setTxType(tx.type); 
+                        setTxAmount(tx.amount); 
+                        setTxAccount(tx.accountId); 
+                        setTxCategory(tx.category); 
+                        setTxSubCategory(tx.subCategory || ''); 
+                        setTxNote(tx.note || ''); 
+                        setTxDate(new Date(tx.date).toISOString().slice(0,16)); 
+                        setIsAddingTransaction(true); 
+                      }} className="p-2 bg-zinc-800 rounded-full text-blue-400"><Edit2 className="w-4 h-4" /></button>
                       <button onClick={() => handleDeleteTransaction(tx.id)} className="p-2 bg-zinc-800 rounded-full text-rose-500"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
@@ -267,7 +317,7 @@ const App: React.FC = () => {
                   <div className="p-5 flex items-center justify-between bg-zinc-900/40">
                     <div className="flex flex-col">
                       <span className="font-bold text-lg text-white">{cat.name}</span>
-                      <span className="text-[10px] font-black text-zinc-500 tracking-widest uppercase">{cat.subCategories.length} Subs</span>
+                      <span className="text-[10px] font-black text-zinc-500 tracking-widest uppercase">{cat.subCategories.length} Sub-items</span>
                     </div>
                     <div className="flex gap-1">
                       <button onClick={() => setShowCatModal({ type: 'sub', catId: cat.id })} className="p-2 text-blue-400 hover:bg-blue-400/10 rounded-full"><Plus className="w-5 h-5" /></button>
@@ -291,7 +341,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Shared Modals */}
+      {/* Category Modal (Inline for Mobile) */}
       {showCatModal && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
           <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-3xl p-6 space-y-6">
@@ -305,68 +355,112 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Floating Plus Button */}
+      {/* Main Floating Action Button */}
       <button onClick={() => { setEditingTransaction(null); setTxAmount(0); setTxNote(''); setIsAddingTransaction(true); }} className="fixed bottom-24 right-6 w-16 h-16 bg-blue-600 rounded-2xl shadow-2xl flex items-center justify-center text-white z-50 hover:scale-105 active:scale-90 transition-all border-t border-white/20"><Plus className="w-10 h-10" /></button>
 
-      {/* Bottom Nav */}
+      {/* Navigation Bar */}
       <nav className="fixed bottom-0 left-0 right-0 bg-zinc-900/90 backdrop-blur-2xl border-t border-zinc-800 flex justify-around p-3 pb-8 z-40 safe-bottom">
         <button onClick={() => setActiveView('dashboard')} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'dashboard' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><LayoutGrid className="w-6 h-6" /><span className="text-[10px] font-bold uppercase tracking-tighter">Home</span></button>
         <button onClick={() => setActiveView('records')} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'records' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><ArrowLeftRight className="w-6 h-6" /><span className="text-[10px] font-bold uppercase tracking-tighter">Records</span></button>
         <button onClick={() => setActiveView('categories')} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'categories' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><PieChart className="w-6 h-6" /><span className="text-[10px] font-bold uppercase tracking-tighter">Cats</span></button>
       </nav>
 
-      {/* Form Modals (Transaction/Account) omitted for brevity but remain fully functional as per previous turn */}
-      {/* (Adding just the Transaction Modal for completion of requirements) */}
+      {/* Transaction Modal */}
       {isAddingTransaction && (
         <div className="fixed inset-0 z-[60] flex items-end justify-center p-0 bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-md bg-zinc-900 rounded-t-[3rem] p-8 space-y-6 animate-in slide-in-from-bottom duration-300 overflow-y-auto no-scrollbar max-h-[92dvh]">
-            <div className="flex items-center justify-between"><h3 className="text-2xl font-black uppercase">{editingTransaction ? 'Edit' : 'New'} Record</h3><button onClick={() => setIsAddingTransaction(false)} className="p-2 bg-zinc-800 rounded-full"><X className="w-6 h-6" /></button></div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-black uppercase tracking-tighter">{editingTransaction ? 'Edit' : 'New'} Record</h3>
+              <button onClick={() => setIsAddingTransaction(false)} className="p-2 bg-zinc-800 rounded-full"><X className="w-6 h-6" /></button>
+            </div>
+            
             <div className="flex p-1.5 bg-zinc-950 rounded-2xl border border-zinc-800">
               {(['EXPENSE', 'INCOME', 'TRANSFER'] as TransactionType[]).map(type => (
-                <button key={type} onClick={() => setTxType(type)} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${txType === type ? 'bg-zinc-800 text-blue-400' : 'text-zinc-600'}`}>{type}</button>
+                <button key={type} onClick={() => {
+                  setTxType(type);
+                  if(type === 'TRANSFER') setTxCategory('Transfer');
+                }} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${txType === type ? 'bg-zinc-800 text-blue-400' : 'text-zinc-600'}`}>{type}</button>
               ))}
             </div>
+
             <div className="space-y-4">
-              <input type="number" value={txAmount || ''} onChange={(e) => setTxAmount(Number(e.target.value))} placeholder="0.00" className="w-full bg-zinc-950 border-2 border-zinc-800 focus:border-blue-600 rounded-[2rem] py-6 px-8 text-4xl font-black outline-none" />
+              <input type="number" value={txAmount || ''} onChange={(e) => setTxAmount(Number(e.target.value))} placeholder="0.00" className="w-full bg-zinc-950 border-2 border-zinc-800 focus:border-blue-600 rounded-[2rem] py-6 px-8 text-4xl font-black outline-none transition-all" />
+              
               <div className="grid grid-cols-1 gap-4">
-                <select value={txAccount} onChange={(e) => setTxAccount(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 font-bold outline-none">{accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}</select>
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-4">Account</span>
+                  <select value={txAccount} onChange={(e) => setTxAccount(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 font-bold outline-none">{accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}</select>
+                </div>
+
                 {txType === TransactionType.TRANSFER ? (
-                  <select value={txToAccount} onChange={(e) => setTxToAccount(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 font-bold outline-none">{accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}</select>
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-4">Target Account</span>
+                    <select value={txToAccount} onChange={(e) => setTxToAccount(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 font-bold outline-none">{accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}</select>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
-                    <select value={txCategory} onChange={(e) => setTxCategory(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-4 font-bold outline-none text-sm">{categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}</select>
-                    <select value={txSubCategory} onChange={(e) => setTxSubCategory(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-4 font-bold outline-none text-sm"><option value="">None</option>{categories.find(c => c.name === txCategory)?.subCategories.map(s => <option key={s} value={s}>{s}</option>)}</select>
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-4">Category</span>
+                      <select value={txCategory} onChange={(e) => { setTxCategory(e.target.value); setTxSubCategory(''); }} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-4 font-bold outline-none text-sm">{categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}</select>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-4">Sub-cat</span>
+                      <select value={txSubCategory} onChange={(e) => setTxSubCategory(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-4 font-bold outline-none text-sm"><option value="">None</option>{categories.find(c => c.name === txCategory)?.subCategories.map(s => <option key={s} value={s}>{s}</option>)}</select>
+                    </div>
                   </div>
                 )}
-                <input type="datetime-local" value={txDate} onChange={e => setTxDate(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-sm font-bold outline-none" />
-                <div className="relative">
-                  <input list="note-list" placeholder="Add a note..." value={txNote} onChange={(e) => setTxNote(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-sm outline-none" />
-                  <datalist id="note-list">{noteSuggestions.map(n => <option key={n} value={n} />)}</datalist>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-4">Date & Time</span>
+                    <input type="datetime-local" value={txDate} onChange={e => setTxDate(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-sm font-bold outline-none" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-4">Notes</span>
+                    <div className="relative">
+                      <input list="note-list" placeholder="Add a note..." value={txNote} onChange={(e) => setTxNote(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 text-sm outline-none" />
+                      <datalist id="note-list">{noteSuggestions.map(n => <option key={n} value={n} />)}</datalist>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+            
             <button onClick={handleSaveTransaction} className="w-full bg-blue-600 py-5 rounded-[2.5rem] font-black text-xl shadow-2xl shadow-blue-600/20 active:scale-95 transition-all">Save Record</button>
           </div>
         </div>
       )}
 
+      {/* Account Settings / New Account Modal */}
       {(isAddingAccount || editingAccount) && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
            <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-3xl p-8 space-y-6 animate-in zoom-in duration-200">
-             <div className="flex justify-between items-center"><h3 className="text-xl font-bold">{isAddingAccount ? 'New Account' : 'Edit Theme'}</h3><button onClick={() => {setIsAddingAccount(false); setEditingAccount(null);}}><X className="w-6 h-6 text-zinc-500" /></button></div>
+             <div className="flex justify-between items-center">
+               <h3 className="text-xl font-bold">{isAddingAccount ? 'New Account' : 'Account Color'}</h3>
+               <button onClick={() => {setIsAddingAccount(false); setEditingAccount(null);}}><X className="w-6 h-6 text-zinc-500" /></button>
+             </div>
              <div className="space-y-4">
                {isAddingAccount && (
                  <>
-                   <input placeholder="Name" value={newAccName} onChange={e => setNewAccName(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 outline-none" />
+                   <input placeholder="Name" value={newAccName} onChange={e => setNewAccName(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 outline-none focus:border-blue-500" />
                    <div className="grid grid-cols-2 gap-3">
                      <select value={newAccType} onChange={e => setNewAccType(e.target.value as AccountType)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-4 font-bold outline-none">{Object.values(AccountType).map(t => <option key={t} value={t}>{t}</option>)}</select>
                      <select value={newAccCurrency} onChange={e => setNewAccCurrency(e.target.value as Currency)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-4 font-bold outline-none"><option value="IRR">IRR</option><option value="USD">USD</option><option value="EUR">EUR</option></select>
                    </div>
                  </>
                )}
-               <input type="color" value={isAddingAccount ? newAccColor : editingAccount?.color} onChange={e => { const c = e.target.value; if(isAddingAccount) setNewAccColor(c); else if(editingAccount) setAccounts(accounts.map(a => a.id === editingAccount.id ? {...a, color: c} : a)); }} className="w-full h-14 bg-transparent border-none cursor-pointer" />
+               <div className="space-y-2">
+                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-4">Spectrum Color Pick</span>
+                 <input type="color" value={isAddingAccount ? newAccColor : editingAccount?.color} onChange={e => { 
+                   const c = e.target.value; 
+                   if(isAddingAccount) setNewAccColor(c); 
+                   else if(editingAccount) setAccounts(accounts.map(a => a.id === editingAccount.id ? {...a, color: c} : a)); 
+                 }} className="w-full h-14 bg-transparent border-none cursor-pointer p-0" />
+               </div>
              </div>
-             <button onClick={isAddingAccount ? handleAddAccount : () => setEditingAccount(null)} className="w-full py-4 bg-blue-600 rounded-2xl font-black text-white">{isAddingAccount ? 'Create' : 'Done'}</button>
+             <button onClick={isAddingAccount ? handleAddAccount : () => setEditingAccount(null)} className="w-full py-4 bg-blue-600 rounded-2xl font-black text-white shadow-lg active:scale-95 transition-all">
+               {isAddingAccount ? 'Create Account' : 'Save Theme'}
+             </button>
            </div>
         </div>
       )}
