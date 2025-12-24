@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Menu, Bell, Settings, Plus, LayoutGrid, List, TrendingUp, 
@@ -12,9 +13,11 @@ import {
   Account, Transaction, TransactionType, AccountType, Category, Currency 
 } from './types';
 
-const PRESET_COLORS = [
-  '#2563eb', '#3f3f46', '#10b981', '#d97706', '#7e22ce', 
-  '#ef4444', '#f43f5e', '#8b5cf6', '#0ea5e9', '#14b8a6'
+const FULL_SPECTRUM_COLORS = [
+  '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', 
+  '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
+  '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
+  '#ec4899', '#f43f5e', '#71717a', '#4b5563', '#2563eb'
 ];
 
 const App: React.FC = () => {
@@ -65,7 +68,7 @@ const App: React.FC = () => {
   const [newAccBalance, setNewAccBalance] = useState('0');
   const [newAccType, setNewAccType] = useState<AccountType>(AccountType.BANK);
   const [newAccCurrency, setNewAccCurrency] = useState<Currency>('IRR');
-  const [newAccColor, setNewAccColor] = useState(PRESET_COLORS[0]);
+  const [newAccColor, setNewAccColor] = useState(FULL_SPECTRUM_COLORS[0]);
 
   const [txType, setTxType] = useState<TransactionType>(TransactionType.EXPENSE);
   const [txAmountStr, setTxAmountStr] = useState<string>('0');
@@ -131,6 +134,20 @@ const App: React.FC = () => {
     setTxSubCategory(tx.subCategory || ''); 
     setTxNote(tx.note || ''); 
     setTxDate(getLocalISOString(new Date(tx.date))); 
+    setIsAddingTransaction(true);
+  };
+
+  // Fix: Added handleCloneTransaction to resolve errors on lines 437 and 471.
+  const handleCloneTransaction = (tx: Transaction) => {
+    setEditingTransaction(null);
+    setTxType(tx.type);
+    setTxAmountStr(tx.amount.toString());
+    setTxAccount(tx.accountId);
+    setTxToAccount(tx.toAccountId || '');
+    setTxCategory(tx.category);
+    setTxSubCategory(tx.subCategory || '');
+    setTxNote(tx.note || '');
+    setTxDate(getLocalISOString());
     setIsAddingTransaction(true);
   };
 
@@ -206,25 +223,6 @@ const App: React.FC = () => {
     performDeleteTransaction(id);
   };
 
-  const handleCloneTransaction = (tx: Transaction) => {
-    const cloned: Transaction = {
-      ...tx,
-      id: Math.random().toString(36).substr(2, 9),
-      date: new Date().toISOString()
-    };
-    setTransactions(prev => [cloned, ...prev]);
-    setAccounts(prev => prev.map(acc => {
-      let b = acc.balance;
-      if (acc.id === cloned.accountId) {
-        b = cloned.type === TransactionType.INCOME ? b + cloned.amount : b - cloned.amount;
-      }
-      if (cloned.type === TransactionType.TRANSFER && acc.id === cloned.toAccountId) {
-        b = b + cloned.amount;
-      }
-      return { ...acc, balance: b };
-    }));
-  };
-
   const handleBulkDelete = () => {
     if (!confirm(`Delete ${selectedRecordIds.length} records permanently?`)) return;
     selectedRecordIds.forEach(id => performDeleteTransaction(id));
@@ -273,16 +271,11 @@ const App: React.FC = () => {
       return;
     }
     if (!confirm("Delete this account and all its transactions?")) return;
-    
-    // Explicitly target the ID to ensure correctness
     setAccounts(prev => prev.filter(a => a.id !== id));
     setTransactions(prev => prev.filter(t => t.accountId !== id && t.toAccountId !== id));
-    
     if (selectedAccountIds.includes(id)) {
       setSelectedAccountIds(prev => prev.filter(x => x !== id));
     }
-    
-    // Reset modal states
     setEditingAccount(null);
     setTempAccount(null);
     setShowAccountManager(false);
@@ -318,10 +311,53 @@ const App: React.FC = () => {
     if (!newName) return;
     setCategories(prev => prev.map(c => c.id === catId ? { ...c, name: newName } : c));
     setIsEditingCategoryName(false);
-    setCategories(prev => {
-      const updated = prev.find(c => c.id === catId);
-      if (updated) setManagingCategory(updated);
-      return prev;
+    setManagingCategory(prev => prev ? { ...prev, name: newName } : null);
+  };
+
+  // Sub-category logic
+  const handleAddSubCategory = (catId: string) => {
+    const name = prompt("New sub-category name:");
+    if (!name) return;
+    setCategories(prev => prev.map(c => 
+      c.id === catId ? { ...c, subCategories: [...c.subCategories, name] } : c
+    ));
+    setManagingCategory(prev => prev ? { ...prev, subCategories: [...prev.subCategories, name] } : null);
+  };
+
+  const handleEditSubCategory = (catId: string, oldName: string, index: number) => {
+    const newName = prompt("Edit sub-category:", oldName);
+    if (!newName || newName === oldName) return;
+    setCategories(prev => prev.map(c => {
+      if (c.id === catId) {
+        const nextSubs = [...c.subCategories];
+        nextSubs[index] = newName;
+        return { ...c, subCategories: nextSubs };
+      }
+      return c;
+    }));
+    setManagingCategory(prev => {
+      if (!prev) return null;
+      const nextSubs = [...prev.subCategories];
+      nextSubs[index] = newName;
+      return { ...prev, subCategories: nextSubs };
+    });
+  };
+
+  const handleDeleteSubCategory = (catId: string, index: number) => {
+    if (!confirm("Delete this sub-category?")) return;
+    setCategories(prev => prev.map(c => {
+      if (c.id === catId) {
+        const nextSubs = [...c.subCategories];
+        nextSubs.splice(index, 1);
+        return { ...c, subCategories: nextSubs };
+      }
+      return c;
+    }));
+    setManagingCategory(prev => {
+      if (!prev) return null;
+      const nextSubs = [...prev.subCategories];
+      nextSubs.splice(index, 1);
+      return { ...prev, subCategories: nextSubs };
     });
   };
 
@@ -337,8 +373,8 @@ const App: React.FC = () => {
 
   const getAmountFontSize = (str: string) => {
     const length = str.length;
-    if (length > 18) return 'text-xl';
-    if (length > 14) return 'text-2xl';
+    if (length > 20) return 'text-xl';
+    if (length > 15) return 'text-2xl';
     if (length > 10) return 'text-3xl';
     if (length > 7) return 'text-4xl';
     return 'text-5xl';
@@ -355,9 +391,9 @@ const App: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto h-[100dvh] bg-[#0e0e10] flex flex-col relative overflow-hidden select-none">
-      {/* Header logic */}
+      {/* Header */}
       {selectedRecordIds.length > 0 ? (
-        <header className="p-4 flex items-center justify-between sticky top-0 z-[60] bg-blue-600 safe-top animate-in slide-in-from-top duration-300">
+        <header className="p-4 flex items-center justify-between sticky top-0 z-[60] bg-blue-600 safe-top animate-in fade-in slide-in-from-top duration-200">
           <div className="flex items-center gap-4">
             <button onClick={() => setSelectedRecordIds([])} className="p-1"><X className="w-6 h-6 text-white" /></button>
             <span className="text-xl font-bold text-white">{selectedRecordIds.length} Selected</span>
@@ -424,7 +460,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Records and Categories views logic stays consistent */}
+        {/* Other views */}
         {activeView === 'records' && (
           <div className="flex flex-col h-full animate-in slide-in-from-right duration-400">
              <div className="p-4 border-b border-zinc-900 bg-[#0e0e10]/80 backdrop-blur-lg sticky top-0 z-20">
@@ -464,6 +500,10 @@ const App: React.FC = () => {
                  <button onClick={() => setActiveView('dashboard')} className="p-1 text-zinc-400"><ArrowLeft className="w-6 h-6" /></button>
                  <h2 className="text-xl font-bold">Categories</h2>
                </div>
+               <button onClick={() => {
+                 const n = prompt("Category Name:");
+                 if (n) setCategories(prev => [...prev, { id: Date.now().toString(), name: n, subCategories: [] }]);
+               }} className="p-2 text-blue-500"><Plus className="w-6 h-6" /></button>
              </div>
              <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-4 no-scrollbar">
                {categories.map(cat => (
@@ -482,16 +522,16 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Main Floating Action Button - Optimized size & position */}
+      {/* Optimized FAB */}
       <button 
         onClick={handleOpenNewTransaction} 
-        className={`fixed bottom-[104px] right-6 w-14 h-14 bg-blue-600 rounded-2xl shadow-2xl flex items-center justify-center text-white z-50 hover:scale-105 active:scale-90 transition-all border-t border-white/20 ${selectedRecordIds.length > 0 ? 'scale-0' : 'scale-100'}`}
+        className={`fixed bottom-[116px] right-6 w-14 h-14 bg-blue-600 rounded-2xl shadow-2xl flex items-center justify-center text-white z-50 hover:scale-105 active:scale-95 transition-all border-t border-white/20 ${selectedRecordIds.length > 0 ? 'scale-0' : 'scale-100'}`}
       >
         <Plus className="w-8 h-8" />
       </button>
 
       {/* Navigation Bar */}
-      <nav className={`fixed bottom-0 left-0 right-0 bg-[#0e0e10]/95 backdrop-blur-2xl border-t border-zinc-900 flex justify-around p-3 pb-8 z-40 safe-bottom transition-transform duration-300 ${selectedRecordIds.length > 0 ? 'translate-y-full' : 'translate-y-0'}`}>
+      <nav className={`fixed bottom-0 left-0 right-0 bg-[#0e0e10]/95 backdrop-blur-2xl border-t border-zinc-900 flex justify-around p-3 pb-10 z-40 safe-bottom transition-transform duration-300 ${selectedRecordIds.length > 0 ? 'translate-y-full' : 'translate-y-0'}`}>
         <button onClick={() => setActiveView('dashboard')} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'dashboard' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><LayoutGrid className="w-6 h-6" /><span className="text-[10px] font-bold uppercase tracking-tighter">Home</span></button>
         <button onClick={() => setActiveView('records')} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'records' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><ArrowLeftRight className="w-6 h-6" /><span className="text-[10px] font-bold uppercase tracking-tighter">Records</span></button>
         <button onClick={() => setActiveView('categories')} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'categories' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><PieChart className="w-6 h-6" /><span className="text-[10px] font-bold uppercase tracking-tighter">Cats</span></button>
@@ -555,20 +595,14 @@ const App: React.FC = () => {
               </div>
            </div>
 
-           {/* Unified Symmetrical Keypad */}
+           {/* Centered Symmetric Keypad */}
            <div className="bg-[#1c1c1f] p-4">
               <div className="grid grid-cols-4 gap-2">
-                 {/* Main Numbers Column (left 3 cols) and Operations Column (right 1 col) */}
-                 {[
-                   7, 8, 9, '/',
-                   4, 5, 6, '*',
-                   1, 2, 3, '-',
-                   '.', 0, 'DEL', '+'
-                 ].map((key, idx) => (
+                 {[7, 8, 9, '/', 4, 5, 6, '*', 1, 2, 3, '-', '.', 0, 'DEL', '+'].map((key, idx) => (
                    <button 
                      key={idx}
                      onClick={() => handleKeypadPress(key.toString())}
-                     className={`h-14 w-full flex items-center justify-center rounded-2xl text-2xl font-light transition-all active:scale-95 ${
+                     className={`h-14 flex items-center justify-center rounded-2xl text-2xl font-light transition-all active:scale-95 ${
                        typeof key === 'number' || key === '.' 
                         ? 'text-zinc-100 bg-zinc-900/20' 
                         : 'text-zinc-500 bg-zinc-900/60'
@@ -598,12 +632,12 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Account List Picker Modal - Standardized layout as requested */}
+      {/* Account Picker Modal - Screenshot-matched UI */}
       {(showFromAccountPicker || showToAccountPicker) && (
         <div className="fixed inset-0 z-[150] bg-black/98 backdrop-blur-xl flex flex-col p-6 safe-top animate-in fade-in zoom-in duration-200">
            <div className="flex items-center justify-between mb-8">
-             <h3 className="text-xl font-black uppercase tracking-tight text-white">
-               {showFromAccountPicker ? 'Account' : 'Destination'}
+             <h3 className="text-xl font-bold text-white">
+               {showFromAccountPicker ? 'Select Account' : 'Select Destination'}
              </h3>
              <button onClick={() => { setShowFromAccountPicker(false); setShowToAccountPicker(false); }} className="p-2 bg-zinc-900 rounded-full text-zinc-400"><X className="w-6 h-6" /></button>
            </div>
@@ -619,18 +653,50 @@ const App: React.FC = () => {
                     setShowFromAccountPicker(false);
                     setShowToAccountPicker(false);
                   }}
-                  className="w-full flex items-center justify-between p-5 bg-zinc-900/40 border border-zinc-800/50 rounded-[2.2rem] hover:border-blue-500/50 active:scale-95 transition-all text-left"
+                  className="w-full flex items-center justify-between p-5 bg-[#1c1c1f]/40 border border-zinc-800/60 rounded-[1.8rem] active:scale-[0.98] transition-all"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner" style={{ backgroundColor: `${acc.color}20`, color: acc.color }}>
-                      <AccountIcon type={acc.type} className="w-6 h-6" />
+                    {/* Icon + Color Dot */}
+                    <div className="flex items-center gap-3">
+                       <div style={{ color: acc.color }} className="opacity-80">
+                         <AccountIcon type={acc.type} className="w-5 h-5" />
+                       </div>
+                       <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: acc.color }} />
                     </div>
-                    <span className="font-bold text-lg text-white truncate max-w-[150px]">{acc.name}</span>
+                    <span className="font-bold text-lg text-zinc-100">{acc.name}</span>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-zinc-500 font-black text-sm tracking-widest">{acc.currency}</span>
-                    <div className="w-1.5 h-1.5 rounded-full mt-1" style={{ backgroundColor: acc.color }} />
-                  </div>
+                  <span className="text-zinc-500 font-bold tracking-widest text-sm">{acc.currency}</span>
+                </button>
+              ))}
+           </div>
+        </div>
+      )}
+
+      {/* Category Picker Modal */}
+      {showCategoryPicker && (
+        <div className="fixed inset-0 z-[150] bg-black/98 backdrop-blur-xl flex flex-col p-6 safe-top animate-in fade-in zoom-in duration-200">
+           <div className="flex items-center justify-between mb-6">
+             <h3 className="text-xl font-bold text-white">Select Category</h3>
+             <button onClick={() => { setShowCategoryPicker(false); setCategorySearch(''); }} className="p-2 bg-zinc-900 rounded-full text-zinc-400"><X className="w-6 h-6" /></button>
+           </div>
+           <div className="relative mb-6">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+              <input autoFocus placeholder="Search..." value={categorySearch} onChange={e => setCategorySearch(e.target.value)} className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-blue-600 font-medium text-white" />
+           </div>
+           <div className="flex-1 overflow-y-auto no-scrollbar space-y-1 pb-20">
+              {filteredFlatCategories.map((item, idx) => (
+                <button 
+                  key={idx}
+                  onClick={() => {
+                    setTxCategory(item.main);
+                    setTxSubCategory(item.sub || '');
+                    setShowCategoryPicker(false);
+                    setCategorySearch('');
+                  }}
+                  className="w-full text-left p-4 rounded-2xl hover:bg-zinc-800/50 flex items-center justify-between border border-transparent active:border-zinc-800 transition-all"
+                >
+                  <span className={`font-bold ${item.sub ? 'text-zinc-400 text-sm pl-4' : 'text-zinc-100 text-lg'}`}>{item.display}</span>
+                  <ChevronRight className="w-4 h-4 text-zinc-700" />
                 </button>
               ))}
            </div>
@@ -646,7 +712,7 @@ const App: React.FC = () => {
              <button onClick={() => deleteCategory(managingCategory.id)} className="p-2 text-rose-500 bg-rose-500/10 rounded-xl"><Trash2 className="w-5 h-5" /></button>
            </div>
 
-           <div className="bg-zinc-900/50 p-6 rounded-[2.5rem] border border-zinc-800 mb-6">
+           <div className="bg-zinc-900/50 p-6 rounded-[2.5rem] border border-zinc-800 mb-8">
              <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest block mb-2">Category Name</span>
              <div className="flex items-center justify-between">
                 {isEditingCategoryName ? (
@@ -659,19 +725,19 @@ const App: React.FC = () => {
                 )}
              </div>
            </div>
-           {/* Additional management logic remains in background */}
+
            <div className="flex-1 overflow-y-auto no-scrollbar pb-20">
               <div className="flex items-center justify-between mb-4 px-2">
                 <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Sub-items</span>
-                <button className="text-blue-500 font-bold flex items-center gap-1 bg-blue-500/10 px-4 py-1.5 rounded-full text-sm"><Plus className="w-4 h-4" /> Add New</button>
+                <button onClick={() => handleAddSubCategory(managingCategory.id)} className="text-blue-500 font-bold flex items-center gap-1 bg-blue-500/10 px-4 py-1.5 rounded-full text-sm"><Plus className="w-4 h-4" /> Add New</button>
               </div>
               <div className="space-y-2">
                  {managingCategory.subCategories.map((sub, idx) => (
-                   <div key={idx} className="p-4 bg-zinc-900/30 rounded-2xl flex items-center justify-between border border-zinc-800/30">
+                   <div key={idx} className="p-4 bg-[#1c1c1f]/50 rounded-2xl flex items-center justify-between border border-zinc-800/30">
                       <span className="font-bold text-zinc-200">{sub}</span>
                       <div className="flex gap-2">
-                         <button className="p-2 text-zinc-500"><Edit2 className="w-4 h-4" /></button>
-                         <button className="p-2 text-zinc-500"><Trash2 className="w-4 h-4" /></button>
+                         <button onClick={() => handleEditSubCategory(managingCategory.id, sub, idx)} className="p-2 text-zinc-500 hover:text-blue-400"><Edit2 className="w-4 h-4" /></button>
+                         <button onClick={() => handleDeleteSubCategory(managingCategory.id, idx)} className="p-2 text-zinc-500 hover:text-rose-500"><Trash2 className="w-4 h-4" /></button>
                       </div>
                    </div>
                  ))}
@@ -688,71 +754,36 @@ const App: React.FC = () => {
                <h3 className="text-xl font-bold">{isAddingAccount ? 'New Account' : 'Edit Account'}</h3>
                <button onClick={() => {setIsAddingAccount(false); setEditingAccount(null); setTempAccount(null);}}><X className="w-6 h-6 text-zinc-500" /></button>
              </div>
-             <div className="space-y-4 max-h-[60vh] overflow-y-auto no-scrollbar pb-4">
+             <div className="space-y-4 max-h-[70vh] overflow-y-auto no-scrollbar pb-4">
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-4">Account Name</span>
-                  <input 
-                    placeholder="Wallet Name" 
-                    value={isAddingAccount ? newAccName : tempAccount?.name || ''} 
-                    onChange={e => isAddingAccount ? setNewAccName(e.target.value) : setTempAccount(prev => prev ? {...prev, name: e.target.value} : null)} 
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 outline-none focus:border-blue-500 font-bold text-white" 
-                  />
+                  <input placeholder="Wallet Name" value={isAddingAccount ? newAccName : tempAccount?.name || ''} onChange={e => isAddingAccount ? setNewAccName(e.target.value) : setTempAccount(prev => prev ? {...prev, name: e.target.value} : null)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 outline-none focus:border-blue-500 font-bold text-white" />
                 </div>
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-4">Account Type</span>
                   <div className="grid grid-cols-2 gap-2">
                     {Object.values(AccountType).map(type => (
-                      <button 
-                        key={type}
-                        onClick={() => isAddingAccount ? setNewAccType(type) : setTempAccount(prev => prev ? {...prev, type} : null)}
-                        className={`p-3 rounded-xl border flex items-center gap-2 transition-all ${
-                          (isAddingAccount ? newAccType === type : tempAccount?.type === type) 
-                          ? 'bg-blue-600/20 border-blue-500 text-blue-400' 
-                          : 'bg-zinc-950 border-zinc-800 text-zinc-500'
-                        }`}
-                      >
-                        <AccountIcon type={type} className="w-4 h-4" />
-                        <span className="text-[10px] font-bold uppercase">{type}</span>
-                      </button>
+                      <button key={type} onClick={() => isAddingAccount ? setNewAccType(type) : setTempAccount(prev => prev ? {...prev, type} : null)} className={`p-3 rounded-xl border flex items-center gap-2 transition-all ${(isAddingAccount ? newAccType === type : tempAccount?.type === type) ? 'bg-blue-600/20 border-blue-500 text-blue-400' : 'bg-zinc-950 border-zinc-800 text-zinc-500'}`}><AccountIcon type={type} className="w-4 h-4" /><span className="text-[10px] font-bold uppercase">{type}</span></button>
                     ))}
                   </div>
                 </div>
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-4">Initial Balance</span>
-                  <input 
-                    type="number"
-                    placeholder="0" 
-                    value={isAddingAccount ? newAccBalance : tempAccount?.balance || '0'} 
-                    onChange={e => isAddingAccount ? setNewAccBalance(e.target.value) : setTempAccount(prev => prev ? {...prev, balance: parseFloat(e.target.value) || 0} : null)} 
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 outline-none focus:border-blue-500 font-bold text-white" 
-                  />
+                  <input type="number" placeholder="0" value={isAddingAccount ? newAccBalance : tempAccount?.balance || '0'} onChange={e => isAddingAccount ? setNewAccBalance(e.target.value) : setTempAccount(prev => prev ? {...prev, balance: parseFloat(e.target.value) || 0} : null)} className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-4 px-6 outline-none focus:border-blue-500 font-bold text-white" />
                 </div>
                 <div className="space-y-2">
                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-4 block">Account Color</span>
                    <div className="grid grid-cols-5 gap-2">
-                      {PRESET_COLORS.map(color => (
-                        <button 
-                          key={color}
-                          onClick={() => isAddingAccount ? setNewAccColor(color) : setTempAccount(prev => prev ? {...prev, color} : null)}
-                          style={{ backgroundColor: color }}
-                          className={`w-10 h-10 rounded-full border-4 transition-transform ${
-                            (isAddingAccount ? newAccColor === color : tempAccount?.color === color) ? 'border-white scale-110 shadow-lg' : 'border-transparent'
-                          }`}
-                        />
+                      {FULL_SPECTRUM_COLORS.map(color => (
+                        <button key={color} onClick={() => isAddingAccount ? setNewAccColor(color) : setTempAccount(prev => prev ? {...prev, color} : null)} style={{ backgroundColor: color }} className={`w-8 h-8 rounded-full border-2 transition-transform ${(isAddingAccount ? newAccColor === color : tempAccount?.color === color) ? 'border-white scale-125 shadow-lg' : 'border-transparent opacity-60'}`} />
                       ))}
                    </div>
                 </div>
              </div>
              
              <div className="flex flex-col gap-2 pt-2">
-                <button onClick={isAddingAccount ? handleAddAccount : handleUpdateAccount} className="w-full py-5 bg-blue-600 rounded-2xl font-black text-white shadow-lg active:scale-95 transition-all">
-                  {isAddingAccount ? 'Create Account' : 'Update Wallet'}
-                </button>
-                {editingAccount && (
-                  <button onClick={() => handleDeleteAccount(editingAccount.id)} className="w-full py-4 text-rose-500 font-bold text-sm bg-rose-500/10 rounded-2xl border border-rose-500/20 active:bg-rose-500/20 transition-all">
-                    Delete Account
-                  </button>
-                )}
+                <button onClick={isAddingAccount ? handleAddAccount : handleUpdateAccount} className="w-full py-5 bg-blue-600 rounded-2xl font-black text-white shadow-lg active:scale-95 transition-all">{isAddingAccount ? 'Create Account' : 'Update Wallet'}</button>
+                {editingAccount && <button onClick={() => handleDeleteAccount(editingAccount.id)} className="w-full py-4 text-rose-500 font-bold text-sm bg-rose-500/10 rounded-2xl border border-rose-500/20 active:bg-rose-500/20 transition-all">Delete Account</button>}
              </div>
            </div>
         </div>
@@ -770,20 +801,14 @@ const App: React.FC = () => {
                {accounts.map(acc => (
                  <div key={acc.id} className="flex items-center justify-between p-4 bg-zinc-950/50 border border-zinc-800 rounded-2xl group">
                     <div className="flex items-center gap-3">
-                       <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${acc.color}20`, color: acc.color }}>
-                          <AccountIcon type={acc.type} className="w-5 h-5" />
-                       </div>
+                       <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${acc.color}20`, color: acc.color }}><AccountIcon type={acc.type} className="w-5 h-5" /></div>
                        <span className="font-bold">{acc.name}</span>
                     </div>
-                    <button onClick={() => handleStartEditAccount(acc)} className="p-2 text-blue-400 bg-blue-400/10 rounded-xl hover:bg-blue-400/20 transition-colors">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => handleStartEditAccount(acc)} className="p-2 text-blue-400 bg-blue-400/10 rounded-xl hover:bg-blue-400/20 transition-colors"><Edit2 className="w-4 h-4" /></button>
                  </div>
                ))}
             </div>
-            <button onClick={() => { setIsAddingAccount(true); setShowAccountManager(false); }} className="w-full py-4 bg-zinc-800 border border-zinc-700 rounded-2xl font-bold text-zinc-300 hover:text-white flex items-center justify-center gap-2">
-              <Plus className="w-5 h-5" /> New Account
-            </button>
+            <button onClick={() => { setIsAddingAccount(true); setShowAccountManager(false); }} className="w-full py-4 bg-zinc-800 border border-zinc-700 rounded-2xl font-bold text-zinc-300 hover:text-white flex items-center justify-center gap-2"><Plus className="w-5 h-5" /> New Account</button>
           </div>
         </div>
       )}
