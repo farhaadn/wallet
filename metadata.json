@@ -1,0 +1,5 @@
+{
+  "name": "ZenWallet - Personal Finance Manager",
+  "description": "A comprehensive personal finance tracker inspired by Wallet: Budget Expense Tracker, featuring multi-account management, transaction logging, inter-account transfers, and currency rate insights.",
+  "requestFramePermissions": []
+}
