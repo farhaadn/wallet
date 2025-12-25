@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Menu, Bell, Settings, Plus, LayoutGrid, List, TrendingUp, MoreVertical,
@@ -404,13 +405,14 @@ const App: React.FC = () => {
     }
   };
 
-  const getCategoryIcon = (catName: string) => {
+  const getCategoryIcon = (catName: string, className?: string) => {
     const cat = catName.toLowerCase();
-    if (cat.includes('shopping')) return <ShoppingBag className="w-5 h-5" />;
-    if (cat.includes('hair') || cat.includes('health')) return <Scissors className="w-5 h-5" />;
-    if (cat.includes('grocer') || cat.includes('food')) return <Utensils className="w-5 h-5" />;
-    if (cat.includes('loan') || cat.includes('rent') || cat.includes('maintenance')) return <ReceiptText className="w-5 h-5" />;
-    return <Tag className="w-5 h-5" />;
+    const finalClass = className || "w-6 h-6";
+    if (cat.includes('shopping')) return <ShoppingBag className={finalClass} />;
+    if (cat.includes('hair') || cat.includes('health')) return <Scissors className={finalClass} />;
+    if (cat.includes('grocer') || cat.includes('food')) return <Utensils className={finalClass} />;
+    if (cat.includes('loan') || cat.includes('rent') || cat.includes('maintenance')) return <ReceiptText className={finalClass} />;
+    return <Tag className={finalClass} />;
   };
 
   return (
@@ -585,7 +587,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Redesigned Category Picker: List of boxes matching Account Picker style exactly */}
+      {/* Redesigned Category Picker: Layout and Size match Account Picker perfectly */}
       {showCategoryPicker && (
         <div className="fixed inset-0 z-[200] bg-[#0e0e10] flex flex-col safe-top animate-in slide-in-from-bottom duration-300">
            <header className="p-6 flex items-center justify-between border-b border-zinc-900">
@@ -617,19 +619,40 @@ const App: React.FC = () => {
            <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-3">
               {categorySearch ? (
                 filteredFlatCategories.map((item, idx) => (
-                  <button key={idx} onClick={() => { setTxCategory(item.main); setTxSubCategory(item.sub || ''); setShowCategoryPicker(false); setCategorySearch(''); setSelectedMainCategory(null); setIsSearchingCategory(false); }} className="w-full flex items-center gap-4 p-5 bg-[#1e1e1e] border border-zinc-800 rounded-[2rem] active:scale-[0.98] transition-all"><div className="w-10 h-10 rounded-full bg-zinc-800/50 flex items-center justify-center text-zinc-400 shrink-0">{getCategoryIcon(item.main)}</div><span className="font-medium text-zinc-100 text-lg leading-tight">{item.display}</span></button>
+                  <button key={idx} onClick={() => { setTxCategory(item.main); setTxSubCategory(item.sub || ''); setShowCategoryPicker(false); setCategorySearch(''); setSelectedMainCategory(null); setIsSearchingCategory(false); }} className="w-full flex items-center justify-between p-5 bg-[#1e1e1e] border border-zinc-800 rounded-[2rem] active:scale-[0.98] transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className="text-zinc-500">{getCategoryIcon(item.main, "w-6 h-6")}</div>
+                      <span className="font-bold text-xl text-zinc-100">{item.display}</span>
+                    </div>
+                  </button>
                 ))
               ) : selectedMainCategory ? (
                 <>
-                  <button onClick={() => { setTxCategory(selectedMainCategory.name); setTxSubCategory(''); setShowCategoryPicker(false); setSelectedMainCategory(null); }} className="w-full flex items-center gap-4 p-5 bg-blue-600/10 border border-blue-500/30 rounded-[2rem] active:scale-[0.98] transition-all mb-2"><div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">{getCategoryIcon(selectedMainCategory.name)}</div><span className="font-medium text-blue-400 text-lg leading-tight">Use "{selectedMainCategory.name}"</span></button>
-                  <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest block py-2 ml-4">Sub Categories</span>
+                  <button onClick={() => { setTxCategory(selectedMainCategory.name); setTxSubCategory(''); setShowCategoryPicker(false); setSelectedMainCategory(null); }} className="w-full flex items-center justify-between p-5 bg-blue-600/10 border border-blue-500/30 rounded-[2rem] active:scale-[0.98] transition-all mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="text-blue-500">{getCategoryIcon(selectedMainCategory.name, "w-6 h-6")}</div>
+                      <span className="font-bold text-xl text-blue-500">Use "{selectedMainCategory.name}"</span>
+                    </div>
+                  </button>
+                  <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest block mb-3 ml-4">Sub Categories</span>
                   {selectedMainCategory.subCategories.map((sub, idx) => (
-                    <button key={idx} onClick={() => { setTxCategory(selectedMainCategory.name); setTxSubCategory(sub); setShowCategoryPicker(false); setSelectedMainCategory(null); }} className="w-full flex items-center gap-4 p-5 bg-[#1e1e1e] border border-zinc-800 rounded-[2rem] active:scale-[0.98] transition-all mb-2"><div className="w-10 h-10 rounded-full bg-zinc-800/50 flex items-center justify-center text-zinc-500 shrink-0"><CornerDownRight className="w-4 h-4" /></div><span className="font-medium text-zinc-100 text-lg leading-tight">{sub}</span></button>
+                    <button key={idx} onClick={() => { setTxCategory(selectedMainCategory.name); setTxSubCategory(sub); setShowCategoryPicker(false); setSelectedMainCategory(null); }} className="w-full flex items-center justify-between p-5 bg-[#1e1e1e] border border-zinc-800 rounded-[2rem] active:scale-[0.98] transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="text-zinc-600"><CornerDownRight className="w-6 h-6" /></div>
+                        <span className="font-bold text-xl text-zinc-100">{sub}</span>
+                      </div>
+                    </button>
                   ))}
                 </>
               ) : (
                 categories.map(cat => (
-                  <button key={cat.id} onClick={() => setSelectedMainCategory(cat)} className="w-full flex items-center gap-4 p-5 bg-[#1e1e1e] border border-zinc-800 rounded-[2rem] active:scale-[0.98] transition-all shadow-md group"><div className="w-12 h-12 rounded-full bg-zinc-800/50 flex items-center justify-center text-zinc-400 group-active:text-blue-400 transition-colors shrink-0">{getCategoryIcon(cat.name)}</div><div className="flex flex-col text-left"><span className="font-medium text-zinc-100 text-lg group-active:text-blue-400 transition-colors leading-none">{cat.name}</span><span className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest mt-1">{cat.subCategories.length} options</span></div></button>
+                  <button key={cat.id} onClick={() => setSelectedMainCategory(cat)} className="w-full flex items-center justify-between p-5 bg-[#1e1e1e] border border-zinc-800 rounded-[2rem] active:scale-[0.98] transition-all group">
+                    <div className="flex items-center gap-4">
+                      <div className="text-zinc-500 group-active:text-blue-500 transition-colors">{getCategoryIcon(cat.name, "w-6 h-6")}</div>
+                      <span className="font-bold text-xl text-zinc-100 group-active:text-blue-500 transition-colors">{cat.name}</span>
+                    </div>
+                    <span className="text-zinc-500 font-bold tracking-widest text-sm uppercase">{cat.subCategories.length} Items</span>
+                  </button>
                 ))
               )}
            </div>
