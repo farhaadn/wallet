@@ -413,7 +413,7 @@ const App: React.FC = () => {
       )}
 
       {/* Main Header */}
-      <header className="p-4 px-3.5 flex items-center justify-between sticky top-0 z-30 bg-[#0e0e10]/90 backdrop-blur-md safe-top border-b border-zinc-900/50">
+      <header className="p-4 flex items-center justify-between sticky top-0 z-30 bg-[#0e0e10]/90 backdrop-blur-md safe-top border-b border-zinc-900/50">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Wallet className="w-6 h-6 text-blue-500" />
@@ -425,30 +425,30 @@ const App: React.FC = () => {
 
       <main className="flex-1 overflow-hidden">
         {activeView === 'dashboard' && (
-          <div className="px-3 py-4 space-y-4 pb-40 overflow-y-auto h-full no-scrollbar animate-in fade-in duration-500">
+          <div className="px-2 py-4 space-y-4 pb-40 overflow-y-auto h-full no-scrollbar animate-in fade-in duration-500">
             {/* Accounts Card */}
-            <div className="bg-[#1e1e1e] rounded-[10px] border border-zinc-800/80 shadow-xl overflow-hidden">
-              <div className="px-3.5 py-5 flex items-center justify-between">
-                <h2 className="text-base font-bold text-white tracking-tight">Accounts</h2>
+            <div className="bg-[#1e1e1e] rounded-[8px] border border-zinc-800/80 shadow-xl overflow-hidden">
+              <div className="px-4 py-4 flex items-center justify-between">
+                <h2 className="text-base font-medium text-white tracking-tight">Accounts</h2>
                 <button onClick={() => { setShowSettings(true); pushNav(); }} className="p-1.5 bg-white/5 rounded-lg text-zinc-500 hover:text-blue-400 transition-colors">
                   <Settings className="w-4 h-4" />
                 </button>
               </div>
-              <div className="grid grid-cols-3 gap-2 px-3.5 pb-6">
+              <div className="grid grid-cols-3 gap-1.5 px-3 pb-4">
                 {accounts.map(acc => (
                   <AccountCard key={acc.id} account={acc} isSelected={selectedAccountIds.includes(acc.id)} onClick={() => toggleAccountSelection(acc.id)} />
                 ))}
-                <button onClick={() => { setIsAddingAccount(true); pushNav(); }} className="flex flex-col items-center justify-center p-2 rounded-[6px] border border-dashed border-zinc-800 h-[84px] text-zinc-500 gap-1 bg-[#1e1e1e]/20 hover:bg-[#1e1e1e]/40 transition-colors">
+                <button onClick={() => { setIsAddingAccount(true); pushNav(); }} className="flex flex-col items-center justify-center p-2 rounded-[4px] border border-dashed border-zinc-800 h-[84px] text-zinc-500 gap-1 bg-[#1e1e1e]/20 hover:bg-[#1e1e1e]/40 transition-colors">
                   <Plus className="w-4 h-4" />
-                  <span className="text-[9px] font-bold uppercase tracking-wider">Add</span>
+                  <span className="text-[9px] font-medium uppercase tracking-wider">Add</span>
                 </button>
               </div>
             </div>
 
             {/* Last Records Card */}
-            <div className="bg-[#1e1e1e] rounded-[10px] border border-zinc-800/80 shadow-xl overflow-hidden">
-               <div className="px-3.5 py-5 flex items-center justify-between">
-                 <h2 className="text-base font-bold text-white tracking-tight">Last records overview</h2>
+            <div className="bg-[#1e1e1e] rounded-[8px] border border-zinc-800/80 shadow-xl overflow-hidden">
+               <div className="px-4 py-4 flex items-center justify-between">
+                 <h2 className="text-base font-medium text-white tracking-tight">Last records overview</h2>
                  <List className="w-4 h-4 text-zinc-500" />
                </div>
                <div className="w-full">
@@ -457,7 +457,7 @@ const App: React.FC = () => {
                  ))}
                </div>
                {transactionsToDisplay.length > 0 && (
-                  <button onClick={() => { setActiveView('records'); pushNav(); }} className="w-full py-5 text-blue-500 font-bold text-[10px] uppercase tracking-[0.2em] border-t border-zinc-900/30 hover:bg-zinc-800/20 active:bg-zinc-800/40 transition-colors">Show more</button>
+                  <button onClick={() => { setActiveView('records'); pushNav(); }} className="w-full py-4 text-blue-500 font-medium text-[10px] uppercase tracking-[0.2em] border-t border-zinc-900/30 hover:bg-zinc-800/20 active:bg-zinc-800/40 transition-colors">Show more</button>
                )}
             </div>
           </div>
@@ -465,17 +465,17 @@ const App: React.FC = () => {
 
         {activeView === 'records' && (
           <div className="flex flex-col h-full animate-in slide-in-from-right duration-400 no-scrollbar">
-             <div className="p-4 px-3.5 border-b border-zinc-900 bg-[#0e0e10]/80 backdrop-blur-lg sticky top-0 z-20">
+             <div className="p-4 border-b border-zinc-900 bg-[#0e0e10]/80 backdrop-blur-lg sticky top-0 z-20">
                <div className="flex items-center gap-4 mb-4">
                  <button onClick={() => setActiveView('dashboard')} className="p-1 text-zinc-400"><ArrowLeft className="w-6 h-6" /></button>
-                 <h2 className="text-xl font-bold">Records</h2>
+                 <h2 className="text-xl font-medium">Records</h2>
                </div>
-               <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar px-1 pointer-events-auto">
+               <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar px-2 pointer-events-auto">
                  {accounts.map(acc => (
                    <button 
                      key={acc.id} 
                      onClick={() => toggleAccountSelection(acc.id)} 
-                     className={`flex-shrink-0 px-5 py-2 rounded-[6px] text-[10px] font-bold border transition-all uppercase tracking-wider ${selectedAccountIds.includes(acc.id) ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-[#1e1e1e] border-zinc-800 text-zinc-500'}`}
+                     className={`flex-shrink-0 px-4 py-2 rounded-[4px] text-[10px] font-medium border transition-all uppercase tracking-wider ${selectedAccountIds.includes(acc.id) ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-[#1e1e1e] border-zinc-800 text-zinc-500'}`}
                    >
                      {acc.name}
                    </button>
@@ -483,7 +483,7 @@ const App: React.FC = () => {
                </div>
              </div>
              <div className="flex-1 overflow-y-auto p-2 pb-32 no-scrollbar">
-               <div className="bg-[#1e1e1e]/80 rounded-[10px] overflow-hidden border border-zinc-900/50">
+               <div className="bg-[#1e1e1e]/80 rounded-[8px] overflow-hidden border border-zinc-900/50">
                  {transactionsWithPreBalance.map(tx => (
                    <TransactionItem key={`${tx.id}-${tx.perspective || 'solo'}`} transaction={tx} perspective={tx.perspective} preBalance={tx.preBalance} accountName={accounts.find(a => a.id === (tx.perspective === 'target' ? tx.toAccountId : tx.accountId))?.name || 'Unknown'} onClick={() => handleEditTransaction(tx)} onDelete={() => performDeleteTransaction(tx.id)} onClone={() => handleCloneTransaction(tx)} onLongPress={() => handleToggleRecordSelection(tx.id)} isSelected={selectedRecordIds.includes(tx.id)} fromAccountName={accounts.find(a => a.id === tx.accountId)?.name} toAccountName={accounts.find(a => a.id === tx.toAccountId)?.name} />
                  ))}
@@ -494,21 +494,21 @@ const App: React.FC = () => {
 
         {activeView === 'categories' && (
           <div className="flex flex-col h-full animate-in slide-in-from-right duration-400">
-             <div className="p-4 px-3.5 border-b border-zinc-900 bg-[#0e0e10]/80 backdrop-blur-lg sticky top-0 z-20 flex items-center justify-between">
+             <div className="p-4 border-b border-zinc-900 bg-[#0e0e10]/80 backdrop-blur-lg sticky top-0 z-20 flex items-center justify-between">
                <div className="flex items-center gap-4">
                  <button onClick={() => setActiveView('dashboard')} className="p-1 text-zinc-400"><ArrowLeft className="w-6 h-6" /></button>
-                 <h2 className="text-xl font-bold">Categories</h2>
+                 <h2 className="text-xl font-medium">Categories</h2>
                </div>
                <button onClick={() => { const n = prompt("New category name:"); if(n) setCategories(prev => [...prev, { id: Date.now().toString(), name: n, subCategories: [] }]); }} className="p-2 text-blue-500 bg-blue-500/10 rounded-xl"><Plus className="w-6 h-6" /></button>
              </div>
-             <div className="flex-1 overflow-y-auto p-3 pb-32 space-y-3 no-scrollbar">
+             <div className="flex-1 overflow-y-auto p-2 pb-32 space-y-2 no-scrollbar">
                {categories.map(cat => (
-                 <button key={cat.id} onClick={() => { setManagingCategory(cat); pushNav(); }} className="w-full bg-[#1e1e1e] border border-zinc-800/50 rounded-[10px] overflow-hidden shadow-lg px-3.5 py-6 flex items-center justify-between active:scale-[0.98] transition-all group">
+                 <button key={cat.id} onClick={() => { setManagingCategory(cat); pushNav(); }} className="w-full bg-[#1e1e1e] border border-zinc-800/50 rounded-[4px] overflow-hidden shadow-lg p-5 flex items-center justify-between active:scale-[0.98] transition-all group">
                     <div className="flex items-center gap-4">
                       <div className="text-zinc-500 group-active:text-blue-500 transition-colors">{getCategoryIcon(cat.name, "w-6 h-6")}</div>
-                      <span className="font-bold text-xl text-zinc-100 group-active:text-blue-500 transition-colors">{cat.name}</span>
+                      <span className="font-medium text-xl text-zinc-100 group-active:text-blue-500 transition-colors">{cat.name}</span>
                     </div>
-                    <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{cat.subCategories.length} Items</span>
+                    <span className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest">{cat.subCategories.length} Items</span>
                  </button>
                ))}
              </div>
@@ -520,10 +520,151 @@ const App: React.FC = () => {
       <button onClick={handleOpenNewTransaction} className={`fixed bottom-[114px] right-6 w-14 h-14 bg-blue-600 rounded-[12px] shadow-2xl flex items-center justify-center text-white z-50 hover:scale-105 active:scale-95 transition-all border-t border-white/20 ${selectedRecordIds.length > 0 ? 'scale-0' : 'scale-100'}`}><Plus className="w-8 h-8" /></button>
 
       <nav className={`fixed bottom-0 left-0 right-0 bg-[#0e0e10]/95 backdrop-blur-2xl border-t border-zinc-900 flex justify-around p-3 pb-10 z-40 safe-bottom transition-transform duration-300 ${selectedRecordIds.length > 0 ? 'translate-y-full' : 'translate-y-0'}`}>
-        <button onClick={() => { setActiveView('dashboard'); }} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'dashboard' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><LayoutGrid className="w-6 h-6" /><span className="text-[10px] font-bold uppercase tracking-tighter">Home</span></button>
-        <button onClick={() => { setActiveView('records'); pushNav(); }} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'records' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><ArrowLeftRight className="w-6 h-6" /><span className="text-[10px] font-bold uppercase tracking-tighter">Records</span></button>
-        <button onClick={() => { setActiveView('categories'); pushNav(); }} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'categories' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><PieChart className="w-6 h-6" /><span className="text-[10px] font-bold uppercase tracking-tighter">Cats</span></button>
+        <button onClick={() => { setActiveView('dashboard'); }} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'dashboard' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><LayoutGrid className="w-6 h-6" /><span className="text-[10px] font-medium uppercase tracking-tighter">Home</span></button>
+        <button onClick={() => { setActiveView('records'); pushNav(); }} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'records' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><ArrowLeftRight className="w-6 h-6" /><span className="text-[10px] font-medium uppercase tracking-tighter">Records</span></button>
+        <button onClick={() => { setActiveView('categories'); pushNav(); }} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'categories' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><PieChart className="w-6 h-6" /><span className="text-[10px] font-medium uppercase tracking-tighter">Cats</span></button>
       </nav>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+          <div className="w-full max-w-sm bg-[#1e1e1e] border border-zinc-800 rounded-[10px] p-6 space-y-6 shadow-2xl animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between sticky top-0 bg-[#1e1e1e] pb-4 shrink-0">
+              <h3 className="text-lg font-medium uppercase tracking-[0.1em] text-zinc-400">Settings</h3>
+              <button onClick={() => setShowSettings(false)} className="p-2 bg-[#0e0e10] rounded-full text-zinc-400"><X className="w-5 h-5" /></button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto no-scrollbar space-y-8 pr-1">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between px-2">
+                  <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-[0.2em]">Manage Accounts</span>
+                  <button onClick={() => { setIsAddingAccount(true); setShowSettings(false); pushNav(); }} className="text-blue-500 p-1 bg-blue-500/10 rounded-full"><Plus className="w-4 h-4" /></button>
+                </div>
+                <div className="space-y-2">
+                   {accounts.map(acc => (
+                     <div key={acc.id} className="flex items-center justify-between p-4 bg-[#0e0e10] border border-zinc-800 rounded-[8px] hover:border-zinc-700 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: `${acc.color}20`, color: acc.color }}>
+                            <AccountIcon type={acc.type} className="w-5 h-5" />
+                          </div>
+                          <span className="font-medium text-zinc-200">{acc.name}</span>
+                        </div>
+                        <button onClick={() => handleStartEditAccount(acc)} className="p-2 text-blue-400 bg-blue-400/10 rounded-xl active:bg-blue-400/20"><Edit2 className="w-4 h-4" /></button>
+                     </div>
+                   ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-zinc-800 shrink-0">
+              <button onClick={() => { setIsAddingAccount(true); setShowSettings(false); pushNav(); }} className="w-full py-4 bg-blue-600 font-medium text-white rounded-[4px] shadow-lg active:scale-95 transition-all uppercase tracking-[0.15em] text-[11px]">New Account</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Entry Modal */}
+      {isAddingTransaction && (
+        <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col safe-top animate-in slide-in-from-bottom duration-300">
+           <div className="bg-blue-600 p-4 shrink-0"><div className="flex items-center justify-between mb-8"><button onClick={() => setIsAddingTransaction(false)}><X className="w-6 h-6 text-white" /></button><button onClick={handleSaveTransaction}><Check className="w-7 h-7 text-white" /></button></div><div className="flex gap-1 bg-blue-700/50 p-1 rounded-[10px] border border-blue-400/20">{(['INCOME', 'EXPENSE', 'TRANSFER'] as TransactionType[]).map(type => (<button key={type} onClick={() => { setTxType(type); if(type === 'TRANSFER') setTxCategory('Transfer'); }} className={`flex-1 py-3 text-[10px] font-medium uppercase tracking-widest rounded-[4px] transition-all ${txType === type ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-200 opacity-70'}`}>{type}</button>))}</div></div>
+           <div className="flex-1 bg-blue-600 flex flex-col items-center justify-center px-8 relative overflow-hidden"><div className="flex items-center gap-3 text-white mb-8 w-full justify-center"><span className="text-4xl opacity-50 shrink-0">{txType === 'INCOME' ? '+' : txType === 'TRANSFER' ? '' : '−'}</span><span className={`font-light tracking-tighter truncate text-center leading-tight transition-all duration-300 ${getAmountFontSize(txAmountStr)}`}>{formatInputAmount(txAmountStr)}</span><span className="text-xl font-medium opacity-70 shrink-0">{accounts.find(a => a.id === txAccount)?.currency || 'IRR'}</span></div><div className="w-full grid grid-cols-2 gap-3"><button onClick={() => { setShowFromAccountPicker(true); pushNav(); }} className="flex flex-col items-center bg-blue-700/30 p-4 rounded-[10px] border border-blue-400/20"><span className="text-[8px] font-medium text-blue-100 uppercase tracking-widest opacity-60 mb-1">{txType === TransactionType.TRANSFER ? 'From' : 'Account'}</span><span className="text-white font-medium truncate w-full text-center text-sm">{accounts.find(a => a.id === txAccount)?.name || 'Select'}</span></button>{txType === TransactionType.TRANSFER ? (<button onClick={() => { setShowToAccountPicker(true); pushNav(); }} className="flex flex-col items-center bg-blue-700/30 p-4 rounded-[10px] border border-blue-400/20"><span className="text-[8px] font-medium text-blue-100 uppercase tracking-widest opacity-60 mb-1">To</span><span className="text-white font-medium truncate w-full text-center text-sm">{accounts.find(a => a.id === txToAccount)?.name || 'Select'}</span></button>) : (<button onClick={() => { setShowCategoryPicker(true); pushNav(); }} className="flex flex-col items-center bg-blue-700/30 p-4 rounded-[10px] border border-blue-400/20"><span className="text-[8px] font-medium text-blue-100 uppercase tracking-widest opacity-60 mb-1">Category</span><span className="text-white font-medium truncate w-full text-center text-sm">{txSubCategory ? txSubCategory : (txCategory || 'Select')}</span></button>)}</div></div>
+           <div className="bg-[#1c1c1f] p-4 shrink-0"><div className="grid grid-cols-4 gap-2">{[7, 8, 9, '/', 4, 5, 6, '*', 1, 2, 3, '-', '.', 0, 'DEL', '+'].map((key, idx) => (<button key={idx} onClick={() => handleKeypadPress(key.toString())} className={`h-14 flex items-center justify-center rounded-[4px] text-2xl font-light transition-all active:scale-95 ${typeof key === 'number' || key === '.' ? 'text-zinc-100 bg-[#1e1e1e]' : 'text-zinc-500 bg-[#1e1e1e]/60'}`}>{key === 'DEL' ? <Delete className="w-6 h-6" /> : key === '/' ? '÷' : key}</button>))} <button onClick={() => handleKeypadPress('=')} className="h-14 col-span-4 flex items-center justify-center rounded-[4px] bg-blue-600/10 text-blue-500 active:bg-blue-600/20 transition-all"><Equal className="w-6 h-6" /></button></div><div className="grid grid-cols-2 gap-2 mt-4"><div className="bg-[#1e1e1e] rounded-[4px] px-4 py-3 flex items-center gap-2 border border-zinc-800"><Calendar className="w-4 h-4 text-zinc-600" /><input type="datetime-local" value={txDate} onChange={e => setTxDate(e.target.value)} className="bg-transparent outline-none text-[10px] font-medium text-zinc-400 w-full" /></div><div className="bg-[#1e1e1e] rounded-[4px] px-4 py-3 flex items-center gap-2 border border-zinc-800"><Edit2 className="w-4 h-4 text-zinc-600" /><input placeholder="Note..." value={txNote} onChange={e => setTxNote(e.target.value)} className="bg-transparent outline-none text-[10px] font-medium text-zinc-400 w-full" /></div></div></div>
+        </div>
+      )}
+
+      {(isAddingAccount || editingAccount) && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center p-6 bg-black/95 backdrop-blur-md overflow-y-auto no-scrollbar py-12">
+           <div className="w-full max-w-sm bg-[#1e1e1e] border border-zinc-800 rounded-[10px] p-8 space-y-6 animate-in zoom-in duration-200 shadow-2xl my-auto">
+             <div className="flex justify-between items-center">
+               <h3 className="text-xl font-medium uppercase tracking-tight">{isAddingAccount ? 'New Account' : 'Edit Account'}</h3>
+               <button onClick={() => {setIsAddingAccount(false); setEditingAccount(null); setTempAccount(null);}}><X className="w-6 h-6 text-zinc-500 hover:text-white" /></button>
+             </div>
+             <div className="space-y-5">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest ml-4">Account Name</span>
+                  <input placeholder="Account Name" value={isAddingAccount ? newAccName : tempAccount?.name || ''} onChange={e => isAddingAccount ? setNewAccName(e.target.value) : setTempAccount(prev => prev ? {...prev, name: e.target.value} : null)} className="w-full bg-[#0e0e10] border border-zinc-800 rounded-[4px] py-4 px-6 outline-none focus:border-blue-500 font-medium text-white" />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest ml-4">Initial Balance</span>
+                  <input type="number" placeholder="0" value={isAddingAccount ? newAccBalance : tempAccount?.balance || '0'} onChange={e => isAddingAccount ? setNewAccBalance(e.target.value) : setTempAccount(prev => prev ? {...prev, balance: parseFloat(e.target.value) || 0} : null)} className="w-full bg-[#0e0e10] border border-zinc-800 rounded-[4px] py-4 px-6 outline-none focus:border-blue-500 font-medium text-white" />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest ml-4">Account Type</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.values(AccountType).map(type => (
+                      <button key={type} onClick={() => isAddingAccount ? setNewAccType(type) : setTempAccount(prev => prev ? {...prev, type} : null)} className={`p-3 rounded-[4px] border flex items-center gap-2 transition-all ${(isAddingAccount ? newAccType === type : tempAccount?.type === type) ? 'bg-blue-600 border-blue-400 text-white' : 'bg-[#0e0e10] border-zinc-800 text-zinc-500'}`}><AccountIcon type={type} className="w-4 h-4" /><span className="text-[10px] font-medium uppercase tracking-widest">{type}</span></button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <span className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest ml-4">Color</span>
+                  <div className="bg-[#0e0e10] p-6 rounded-[10px] border border-zinc-800/60">
+                    <div className="grid grid-cols-4 gap-4">
+                      {PRESET_COLORS.map(color => (
+                        <button key={color} onClick={() => isAddingAccount ? setNewAccColor(color) : setTempAccount(prev => prev ? {...prev, color} : null)} style={{ backgroundColor: color }} className={`w-full aspect-square rounded-full border-2 transition-all ${(isAddingAccount ? newAccColor === color : tempAccount?.color === color) ? 'border-white scale-110' : 'border-transparent opacity-40 hover:opacity-100'}`} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+             </div>
+             <div className="flex flex-col gap-3 pt-2">
+                <button onClick={isAddingAccount ? handleAddAccount : handleUpdateAccount} className="w-full py-5 bg-blue-600 rounded-[4px] font-medium text-white shadow-lg active:scale-95 transition-all uppercase tracking-widest">{isAddingAccount ? 'Create Account' : 'Save Changes'}</button>
+                {editingAccount && <button onClick={() => handleDeleteAccount(editingAccount.id)} className="w-full py-4 text-rose-500 font-medium text-xs bg-rose-500/10 rounded-[4px] border border-rose-500/20 active:bg-rose-500/20 transition-all uppercase tracking-widest">Delete Account</button>}
+             </div>
+           </div>
+        </div>
+      )}
+
+      {showCategoryPicker && (
+        <div className="fixed inset-0 z-[200] bg-[#0e0e10] flex flex-col safe-top animate-in slide-in-from-bottom duration-300 no-scrollbar">
+           <header className="p-6 flex items-center justify-between border-b border-zinc-900">
+             <div className="flex items-center gap-4">{selectedMainCategory ? (<button onClick={() => setSelectedMainCategory(null)} className="p-2 bg-[#1e1e1e] rounded-full text-white"><ArrowLeft className="w-5 h-5" /></button>) : (<Tag className="w-6 h-6 text-blue-500" />)}<h3 className="text-xl font-medium uppercase tracking-tight">{selectedMainCategory ? selectedMainCategory.name : 'Category'}</h3></div>
+             <button onClick={() => { setShowCategoryPicker(false); setSelectedMainCategory(null); }} className="p-2 bg-[#1e1e1e] rounded-full text-zinc-400"><X className="w-6 h-6" /></button>
+           </header>
+           <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-3 pb-24">
+              {selectedMainCategory ? (
+                <>
+                  <button onClick={() => { setTxCategory(selectedMainCategory.name); setTxSubCategory(''); setShowCategoryPicker(false); setSelectedMainCategory(null); }} className="w-full flex items-center justify-between p-5 bg-blue-600/10 border border-blue-500/30 rounded-[10px] transition-all"><span className="font-medium text-xl text-blue-500">All {selectedMainCategory.name}</span></button>
+                  {selectedMainCategory.subCategories.map((sub, idx) => (
+                    <button key={idx} onClick={() => { setTxCategory(selectedMainCategory.name); setTxSubCategory(sub); setShowCategoryPicker(false); setSelectedMainCategory(null); }} className="w-full flex items-center justify-between p-5 bg-[#1e1e1e] border border-zinc-800 rounded-[10px] active:scale-[0.98] transition-all"><span className="font-medium text-xl text-zinc-100">{sub}</span></button>
+                  ))}
+                </>
+              ) : (
+                categories.map(cat => (
+                  <button key={cat.id} onClick={() => setSelectedMainCategory(cat)} className="w-full flex items-center justify-between p-5 bg-[#1e1e1e] border border-zinc-800 rounded-[10px] active:scale-[0.98] transition-all group">
+                    <div className="flex items-center gap-4"><div className="text-zinc-500 group-active:text-blue-500 transition-colors">{getCategoryIcon(cat.name, "w-6 h-6")}</div><span className="font-medium text-xl text-zinc-100 group-active:text-blue-500 transition-colors">{cat.name}</span></div>
+                    <span className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest">{cat.subCategories.length} Items</span>
+                  </button>
+                ))
+              )}
+           </div>
+        </div>
+      )}
+
+      {(showFromAccountPicker || showToAccountPicker) && (
+        <div className="fixed inset-0 z-[220] bg-[#0e0e10] flex flex-col safe-top animate-in slide-in-from-bottom duration-300 no-scrollbar">
+           <header className="p-6 flex items-center justify-between border-b border-zinc-900">
+             <div className="flex items-center gap-4"><Wallet className="w-6 h-6 text-blue-500" /><h3 className="text-xl font-medium uppercase tracking-tight">Select Account</h3></div>
+             <button onClick={() => { setShowFromAccountPicker(false); setShowToAccountPicker(false); }} className="p-2 bg-[#1e1e1e] rounded-full text-zinc-400"><X className="w-6 h-6" /></button>
+           </header>
+           <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24 no-scrollbar">
+              {accounts.map(acc => (
+                <button key={acc.id} onClick={() => { if (showFromAccountPicker) setTxAccount(acc.id); else setTxToAccount(acc.id); setShowFromAccountPicker(false); setShowToAccountPicker(false); }} className="w-full flex items-center justify-between p-5 bg-[#1e1e1e] border border-zinc-800 rounded-[8px] active:scale-[0.98] transition-all"><div className="flex items-center gap-4"><div style={{ color: acc.color }}><AccountIcon type={acc.type} className="w-6 h-6" /></div><span className="font-medium text-xl text-zinc-100">{acc.name}</span></div><span className="text-sm font-medium text-zinc-500">{acc.currency}</span></button>
+              ))}
+           </div>
+        </div>
+      )}
+
+      {managingCategory && (
+        <div className="fixed inset-0 z-[160] bg-[#0e0e10] flex flex-col p-6 safe-top animate-in slide-in-from-bottom duration-300 no-scrollbar">
+           <div className="flex items-center justify-between mb-8"><button onClick={() => setManagingCategory(null)} className="p-2 text-zinc-500"><ArrowLeft className="w-6 h-6" /></button><h3 className="text-xl font-medium uppercase tracking-tight">Category Details</h3><button onClick={() => deleteCategory(managingCategory.id)} className="p-2 text-rose-500"><Trash2 className="w-5 h-5" /></button></div>
+           <div className="space-y-4 mb-6"><span className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest block ml-2">Category Name</span>{isEditingCategoryName ? (<div className="p-4 bg-[#1e1e1e] border border-zinc-800 rounded-[4px] flex items-center justify-between animate-in fade-in zoom-in duration-200"><div className="flex items-center gap-4 flex-1 mr-2"><div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-zinc-500 shrink-0">{getCategoryIcon(managingCategory.name, "w-5 h-5")}</div><input autoFocus value={editingCategoryValue} onChange={e => setEditingCategoryValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && updateCategoryName(managingCategory.id, editingCategoryValue)} className="bg-transparent border-b border-blue-500 outline-none text-xl font-medium text-white w-full" /></div><div className="flex gap-1 shrink-0"><button onClick={() => updateCategoryName(managingCategory.id, editingCategoryValue)} className="p-2 bg-blue-600 rounded-lg text-white"><Check className="w-4 h-4" /></button><button onClick={() => setIsEditingCategoryName(false)} className="p-2 bg-zinc-700 rounded-lg text-white"><X className="w-4 h-4" /></button></div></div>) : (<div className="p-4 bg-[#1e1e1e] rounded-[4px] border border-zinc-800 flex items-center justify-between group"><div className="flex items-center gap-4"><div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-zinc-500">{getCategoryIcon(managingCategory.name, "w-5 h-5")}</div><span className="text-2xl font-medium text-white">{managingCategory.name}</span></div><button onClick={() => { setIsEditingCategoryName(true); setEditingCategoryValue(managingCategory.name); }} className="p-2 text-zinc-500 hover:text-white"><Edit2 className="w-4 h-4" /></button></div>)}</div>
+           <div className="flex-1 overflow-y-auto px-1 space-y-2 pb-20 no-scrollbar"><div className="flex items-center justify-between mb-2"><span className="text-xs font-medium text-zinc-500 uppercase tracking-widest px-2">Sub-categories</span><button onClick={() => setIsAddingSub(true)} className="text-blue-500 font-medium px-4 py-1.5 rounded-full text-sm hover:bg-blue-500/10 transition-colors"><Plus className="w-4 h-4" /></button></div>
+              {isAddingSub && (<div className="p-4 bg-[#1e1e1e] border border-zinc-800 rounded-[4px] flex items-center justify-between animate-in fade-in zoom-in duration-200"><input autoFocus placeholder="Sub-category name..." value={newSubValue} onChange={e => setNewSubValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddSubCategory(managingCategory.id, newSubValue)} className="bg-transparent outline-none font-medium text-white flex-1 mr-2" /><div className="flex items-center gap-1 shrink-0"><button onClick={() => handleAddSubCategory(managingCategory.id, newSubValue)} className="p-2 bg-blue-600 rounded-lg text-white"><Check className="w-4 h-4" /></button><button onClick={() => setIsAddingSub(false)} className="p-2 bg-zinc-700 rounded-lg text-white"><X className="w-4 h-4" /></button></div></div>)}
+              {managingCategory.subCategories.map((sub, idx) => (<div key={idx} className="p-4 bg-[#1e1e1e] rounded-[4px] flex items-center justify-between border border-zinc-800">{editingSubIndex === idx ? (<div className="flex items-center justify-between w-full"><input autoFocus value={editingSubValue} onChange={e => setEditingSubValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && saveSubCategoryEdit(managingCategory.id, idx, editingSubValue)} className="bg-transparent border-b border-blue-500 outline-none font-medium text-white flex-1 mr-2" /><div className="flex gap-1 shrink-0"><button onClick={() => saveSubCategoryEdit(managingCategory.id, idx, editingSubValue)} className="p-2 bg-blue-600 rounded-lg text-white"><Check className="w-4 h-4" /></button><button onClick={() => setEditingSubIndex(null)} className="p-2 bg-zinc-700 rounded-lg text-white"><X className="w-4 h-4" /></button></div></div>) : (<><span className="font-medium text-zinc-200">{sub}</span><div className="flex gap-2"><button onClick={() => { setEditingSubIndex(idx); setEditingSubValue(sub); }} className="p-2 text-zinc-500"><Edit2 className="w-4 h-4" /></button><button onClick={() => handleDeleteSubCategory(managingCategory.id, idx)} className="p-2 text-zinc-500"><Trash2 className="w-4 h-4" /></button></div></>)}</div>))}
+           </div>
+        </div>
+      )}
     </div>
   );
 };

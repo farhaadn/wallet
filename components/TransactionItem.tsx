@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Transaction, TransactionType } from '../types';
-import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Split, Copy, Trash2, ShoppingBag, Scissors, Utensils, ReceiptText } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Split, Copy, Trash2, ShoppingBag, Scissors, Landmark, ReceiptText, Utensils } from 'lucide-react';
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -134,7 +134,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         style={{ transform: `translateX(${swipeOffset}px)`, transition: isSwiping ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
-        className={`relative z-10 w-full flex items-center gap-4 px-3.5 py-4 border-b border-[#0e0e10]/30 cursor-pointer select-none min-h-[86px] ${isSelected ? 'bg-blue-600/20' : 'bg-[#1e1e1e] active:bg-zinc-800/40'}`}
+        className={`relative z-10 w-full flex items-center gap-2 px-2.5 py-3 border-b border-[#0e0e10]/30 cursor-pointer select-none min-h-[82px] ${isSelected ? 'bg-blue-600/20' : 'bg-[#1e1e1e] active:bg-zinc-800/40'}`}
       >
         <div className="relative flex-shrink-0 self-center">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${getIconBgColor()} text-white shadow-lg`}>
@@ -142,36 +142,36 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
           </div>
         </div>
         
-        <div className="flex-1 min-w-0 flex flex-col justify-center">
-          <h4 className={`font-semibold text-[15px] leading-tight truncate ${isSelected ? 'text-blue-400' : 'text-zinc-100'}`}>{getDisplayTitle()}</h4>
+        <div className="flex-1 min-w-0 flex flex-col justify-center pr-1">
+          <h4 className={`font-medium text-[15px] leading-tight truncate ${isSelected ? 'text-blue-400' : 'text-zinc-100'}`}>{getDisplayTitle()}</h4>
           
-          <div className="flex items-center gap-1 mt-1">
+          <div className="flex items-center gap-1 mt-0.5">
              {isTransfer ? (
                 <span className="text-[11px] text-[#a8a8a8] font-normal truncate">
                   {fromAccountName} <span className="mx-0.5 opacity-40">→</span> {toAccountName}
                 </span>
              ) : (
-                <span className="text-[11px] text-[#a8a8a8] leading-tight font-medium truncate uppercase tracking-tight">{accountName}</span>
+                <span className="text-[11px] text-[#a8a8a8] leading-tight font-normal truncate uppercase tracking-tight">{accountName}</span>
              )}
           </div>
 
           {transaction.note && (
-            <div className="mt-1 block">
+            <div className="mt-0.5 block">
               <span className="text-[11px] text-[#a8a8a8] font-normal italic leading-tight truncate max-w-full block">"{transaction.note}"</span>
             </div>
           )}
         </div>
 
         <div className="flex flex-col items-end justify-center gap-0.5 shrink-0 self-center">
-          <span className={`font-bold text-[15px] tracking-tight leading-none whitespace-nowrap ${getAmountColor()}`}>
+          <span className={`font-medium text-[15px] tracking-tight leading-none whitespace-nowrap ${getAmountColor()}`}>
             {getAmountPrefix()}{transaction.currency} {transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
           {preBalance !== undefined && (
-            <span className="text-[10px] font-normal text-zinc-500 opacity-70 leading-none whitespace-nowrap mt-1">
+            <span className="text-[10px] font-normal text-emerald-500 opacity-50 leading-none whitespace-nowrap mt-1">
               ({transaction.currency} {preBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
             </span>
           )}
-          <span className="text-[9px] font-medium text-[#a8a8a8] uppercase tracking-tighter mt-1">{new Date(transaction.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+          <span className="text-[9px] font-normal text-[#a8a8a8] uppercase tracking-tighter mt-1">{new Date(transaction.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
         </div>
       </div>
     </div>
