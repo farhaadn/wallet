@@ -25,7 +25,7 @@ const AccountCard: React.FC<AccountCardProps> = ({ account, isSelected, onClick 
         borderColor: isSelected ? account.color : '#2d2d2d',
         backgroundColor: isSelected ? `${account.color}15` : '#1e1e1e'
       }}
-      className={`relative flex flex-col items-start p-3 rounded-[10px] transition-all border text-left h-[84px] w-full
+      className={`relative flex flex-col items-start p-3 rounded-[6px] transition-all border text-left h-[84px] w-full
         ${isSelected ? 'scale-95 ring-1 ring-offset-1 ring-offset-[#0e0e10] ring-zinc-800 shadow-[0_0_15px_-5px] shadow-current' : 'hover:border-zinc-700'}`}
     >
       <div className="flex items-center gap-2 mb-1">
