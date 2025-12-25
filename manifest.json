@@ -1,18 +1,26 @@
 
 {
-  "name": "ZenWallet",
-  "short_name": "ZenWallet",
-  "description": "Android-style Budget & Expense Tracker",
+  "name": "Fallet",
+  "short_name": "Fallet",
+  "description": "Professional Personal Finance & Budget Tracker",
+  "id": "/?source=pwa",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#09090b",
+  "orientation": "portrait",
+  "background_color": "#0e0e10",
+  "theme_color": "#0e0e10",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/1052/1052841.png",
+      "src": "https://img.icons8.com/fluency/192/wallet.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://img.icons8.com/fluency/512/wallet.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ]
 }
