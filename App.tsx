@@ -253,6 +253,7 @@ const App: React.FC = () => {
   };
 
   const performDeleteTransaction = (id: string) => {
+    if (!confirm("Are you sure you want to delete this record?")) return;
     const tx = transactions.find(t => t.id === id);
     if (!tx) return;
     setTransactions(prev => prev.filter(t => t.id !== id));
@@ -265,8 +266,18 @@ const App: React.FC = () => {
   };
 
   const handleBulkDelete = () => {
-    if (!confirm(`Delete ${selectedRecordIds.length} records?`)) return;
-    selectedRecordIds.forEach(id => performDeleteTransaction(id));
+    if (!confirm(`Are you sure you want to delete ${selectedRecordIds.length} records?`)) return;
+    selectedRecordIds.forEach(id => {
+       const tx = transactions.find(t => t.id === id);
+       if (!tx) return;
+       setAccounts(prev => prev.map(acc => {
+          let b = acc.balance;
+          if (acc.id === tx.accountId) b = tx.type === TransactionType.INCOME ? b - tx.amount : b + tx.amount;
+          if (tx.type === TransactionType.TRANSFER && acc.id === tx.toAccountId) b = b - tx.amount;
+          return { ...acc, balance: b };
+       }));
+    });
+    setTransactions(prev => prev.filter(t => !selectedRecordIds.includes(t.id)));
     setSelectedRecordIds([]);
   };
 
@@ -294,7 +305,7 @@ const App: React.FC = () => {
 
   const handleDeleteAccount = (id: string) => {
     if (accounts.length <= 1) return;
-    if (!confirm("Delete account?")) return;
+    if (!confirm("Are you sure you want to delete this account? Transactions will lose their account link.")) return;
     setAccounts(prev => prev.filter(a => a.id !== id));
     setSelectedAccountIds(prev => prev.filter(x => x !== id));
     setEditingAccount(null);
@@ -332,10 +343,10 @@ const App: React.FC = () => {
     if (!category) return;
     const hasRecords = transactions.some(t => t.category === category.name);
     if (hasRecords) {
-      alert("Cannot delete category: it has existing transaction records.");
+      alert("Cannot delete category: it has existing transaction records associated with it.");
       return;
     }
-    if (!confirm("Delete category?")) return;
+    if (!confirm("Are you sure you want to delete this category?")) return;
     setCategories(prev => prev.filter(c => c.id !== id));
     setManagingCategory(null);
   };
@@ -354,9 +365,10 @@ const App: React.FC = () => {
     const subName = cat.subCategories[index];
     const hasRecords = transactions.some(t => t.category === cat.name && t.subCategory === subName);
     if (hasRecords) {
-      alert("Cannot delete sub-category: it has existing transaction records.");
+      alert(`Cannot delete sub-category "${subName}": it has existing transaction records associated with it.`);
       return;
     }
+    if (!confirm(`Are you sure you want to delete "${subName}"?`)) return;
     setCategories(prev => prev.map(c => c.id === catId ? { ...c, subCategories: c.subCategories.filter((_, i) => i !== index) } : c));
     setManagingCategory(prev => prev ? { ...prev, subCategories: prev.subCategories.filter((_, i) => i !== index) } : null);
   };
@@ -473,7 +485,7 @@ const App: React.FC = () => {
         )}
 
         {activeView === 'records' && (
-          <div className="flex flex-col h-full animate-in slide-in-from-right duration-400">
+          <div className="flex flex-col h-full animate-in slide-in-from-right duration-400 no-scrollbar">
              <div className="p-4 border-b border-zinc-900 bg-[#0e0e10]/80 backdrop-blur-lg sticky top-0 z-20">
                <div className="flex items-center gap-4 mb-4">
                  <button onClick={() => setActiveView('dashboard')} className="p-1 text-zinc-400"><ArrowLeft className="w-6 h-6" /></button>
@@ -491,7 +503,7 @@ const App: React.FC = () => {
                  ))}
                </div>
              </div>
-             <div className="flex-1 overflow-y-auto p-2 pb-32">
+             <div className="flex-1 overflow-y-auto p-2 pb-32 no-scrollbar">
                <div className="bg-[#1e1e1e]/80 rounded-[8px] overflow-hidden border border-zinc-900/50">
                  {transactionsWithPreBalance.map(tx => (
                    <TransactionItem key={`${tx.id}-${tx.perspective || 'solo'}`} transaction={tx} perspective={tx.perspective} preBalance={tx.preBalance} accountName={accounts.find(a => a.id === (tx.perspective === 'target' ? tx.toAccountId : tx.accountId))?.name || 'Unknown'} onClick={() => handleEditTransaction(tx)} onDelete={() => performDeleteTransaction(tx.id)} onClone={() => handleCloneTransaction(tx)} onLongPress={() => handleToggleRecordSelection(tx.id)} isSelected={selectedRecordIds.includes(tx.id)} fromAccountName={accounts.find(a => a.id === tx.accountId)?.name} toAccountName={accounts.find(a => a.id === tx.toAccountId)?.name} />
@@ -525,8 +537,8 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* FAB and Nav */}
-      <button onClick={handleOpenNewTransaction} className={`fixed bottom-[116px] right-6 w-14 h-14 bg-blue-600 rounded-[4px] shadow-2xl flex items-center justify-center text-white z-50 hover:scale-105 active:scale-95 transition-all border-t border-white/20 ${selectedRecordIds.length > 0 ? 'scale-0' : 'scale-100'}`}><Plus className="w-8 h-8" /></button>
+      {/* FAB and Nav - Curve increased to rounded-[12px] as requested */}
+      <button onClick={handleOpenNewTransaction} className={`fixed bottom-[116px] right-6 w-14 h-14 bg-blue-600 rounded-[12px] shadow-2xl flex items-center justify-center text-white z-50 hover:scale-105 active:scale-95 transition-all border-t border-white/20 ${selectedRecordIds.length > 0 ? 'scale-0' : 'scale-100'}`}><Plus className="w-8 h-8" /></button>
 
       <nav className={`fixed bottom-0 left-0 right-0 bg-[#0e0e10]/95 backdrop-blur-2xl border-t border-zinc-900 flex justify-around p-3 pb-10 z-40 safe-bottom transition-transform duration-300 ${selectedRecordIds.length > 0 ? 'translate-y-full' : 'translate-y-0'}`}>
         <button onClick={() => { setActiveView('dashboard'); }} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'dashboard' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><LayoutGrid className="w-6 h-6" /><span className="text-[10px] font-medium uppercase tracking-tighter">Home</span></button>
@@ -619,7 +631,7 @@ const App: React.FC = () => {
 
       {/* Category Selection Picker */}
       {showCategoryPicker && (
-        <div className="fixed inset-0 z-[200] bg-[#0e0e10] flex flex-col safe-top animate-in slide-in-from-bottom duration-300">
+        <div className="fixed inset-0 z-[200] bg-[#0e0e10] flex flex-col safe-top animate-in slide-in-from-bottom duration-300 no-scrollbar">
            <header className="p-6 flex items-center justify-between border-b border-zinc-900">
              <div className="flex items-center gap-4">
                {selectedMainCategory ? (
@@ -656,7 +668,7 @@ const App: React.FC = () => {
 
       {/* Account Selection Pickers */}
       {(showFromAccountPicker || showToAccountPicker) && (
-        <div className="fixed inset-0 z-[220] bg-[#0e0e10] flex flex-col safe-top animate-in slide-in-from-bottom duration-300">
+        <div className="fixed inset-0 z-[220] bg-[#0e0e10] flex flex-col safe-top animate-in slide-in-from-bottom duration-300 no-scrollbar">
            <header className="p-6 flex items-center justify-between border-b border-zinc-900">
              <div className="flex items-center gap-4">
                <Wallet className="w-6 h-6 text-blue-500" />
@@ -664,7 +676,7 @@ const App: React.FC = () => {
              </div>
              <button onClick={() => { setShowFromAccountPicker(false); setShowToAccountPicker(false); }} className="p-2 bg-[#1e1e1e] rounded-full text-zinc-400"><X className="w-6 h-6" /></button>
            </header>
-           <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24">
+           <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24 no-scrollbar">
               {accounts.map(acc => (
                 <button 
                   key={acc.id} 
@@ -689,7 +701,7 @@ const App: React.FC = () => {
 
       {/* Category Details/Manage */}
       {managingCategory && (
-        <div className="fixed inset-0 z-[160] bg-[#0e0e10] flex flex-col p-6 safe-top animate-in slide-in-from-bottom duration-300">
+        <div className="fixed inset-0 z-[160] bg-[#0e0e10] flex flex-col p-6 safe-top animate-in slide-in-from-bottom duration-300 no-scrollbar">
            <div className="flex items-center justify-between mb-8">
              <button onClick={() => setManagingCategory(null)} className="p-2 text-zinc-500"><ArrowLeft className="w-6 h-6" /></button>
              <h3 className="text-xl font-medium uppercase tracking-tight">Category Details</h3>
