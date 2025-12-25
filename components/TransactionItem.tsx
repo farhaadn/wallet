@@ -123,9 +123,9 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
   return (
     <div className="relative w-full overflow-hidden bg-[#1e1e1e]">
       <div className="absolute inset-y-0 right-0 flex bg-rose-600 transition-opacity duration-200" style={{ width: `${Math.abs(swipeLimit)}px`, opacity: swipeOffset < -10 ? 1 : 0 }}>
-        <button onClick={(e) => { e.stopPropagation(); onSplit?.(); closeSwipe(); }} className="flex-1 flex flex-col items-center justify-center text-white border-r border-white/5 active:bg-rose-700"><Split className="w-4 h-4 mb-1" /><span className="text-[9px] font-semibold uppercase">Split</span></button>
-        <button onClick={(e) => { e.stopPropagation(); onClone?.(); closeSwipe(); }} className="flex-1 flex flex-col items-center justify-center text-white border-r border-white/5 active:bg-rose-700"><Copy className="w-4 h-4 mb-1" /><span className="text-[9px] font-semibold uppercase">Clone</span></button>
-        <button onClick={(e) => { e.stopPropagation(); onDelete?.(); closeSwipe(); }} className="flex-1 flex flex-col items-center justify-center text-white active:bg-rose-700"><Trash2 className="w-4 h-4 mb-1" /><span className="text-[9px] font-semibold uppercase">Delete</span></button>
+        <button onClick={(e) => { e.stopPropagation(); onSplit?.(); closeSwipe(); }} className="flex-1 flex flex-col items-center justify-center text-white border-r border-white/5 active:bg-rose-700"><Split className="w-4 h-4 mb-1" /><span className="text-[9px] font-medium uppercase">Split</span></button>
+        <button onClick={(e) => { e.stopPropagation(); onClone?.(); closeSwipe(); }} className="flex-1 flex flex-col items-center justify-center text-white border-r border-white/5 active:bg-rose-700"><Copy className="w-4 h-4 mb-1" /><span className="text-[9px] font-medium uppercase">Clone</span></button>
+        <button onClick={(e) => { e.stopPropagation(); onDelete?.(); closeSwipe(); }} className="flex-1 flex flex-col items-center justify-center text-white active:bg-rose-700"><Trash2 className="w-4 h-4 mb-1" /><span className="text-[9px] font-medium uppercase">Delete</span></button>
       </div>
 
       <div 
@@ -143,15 +143,15 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
         </div>
         
         <div className="flex-1 min-w-0 flex flex-col justify-center pr-1">
-          <h4 className={`font-semibold text-[15px] leading-tight truncate ${isSelected ? 'text-blue-400' : 'text-zinc-100'}`}>{getDisplayTitle()}</h4>
+          <h4 className={`font-medium text-[15px] leading-tight truncate ${isSelected ? 'text-blue-400' : 'text-zinc-100'}`}>{getDisplayTitle()}</h4>
           
           <div className="flex items-center gap-1 mt-0.5">
              {isTransfer ? (
-                <span className="text-[11px] text-[#a8a8a8] font-normal truncate opacity-70">
-                  {fromAccountName} <span className="mx-0.5 opacity-50">→</span> {toAccountName}
+                <span className="text-[11px] text-[#a8a8a8] font-normal truncate opacity-60">
+                  {fromAccountName} <span className="mx-0.5 opacity-40">→</span> {toAccountName}
                 </span>
              ) : (
-                <span className="text-[11px] text-[#a8a8a8] leading-tight font-normal truncate uppercase tracking-tight opacity-50">{accountName}</span>
+                <span className="text-[11px] text-[#a8a8a8] leading-tight font-normal truncate uppercase tracking-tight opacity-40">{accountName}</span>
              )}
           </div>
 
@@ -163,15 +163,15 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
         </div>
 
         <div className="flex flex-col items-end justify-center gap-0.5 shrink-0 self-center">
-          <span className={`font-semibold text-[15px] tracking-tight leading-none whitespace-nowrap ${getAmountColor()}`}>
+          <span className={`font-medium text-[15px] tracking-tight leading-none whitespace-nowrap ${getAmountColor()}`}>
             {getAmountPrefix()}{transaction.currency} {transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
           {preBalance !== undefined && (
-            <span className="text-[10px] font-normal text-emerald-500 opacity-60 leading-none whitespace-nowrap mt-1">
+            <span className="text-[10px] font-normal text-emerald-500 opacity-50 leading-none whitespace-nowrap mt-1">
               ({transaction.currency} {preBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
             </span>
           )}
-          <span className="text-[9px] font-medium text-[#a8a8a8] opacity-50 uppercase tracking-tighter mt-1">{new Date(transaction.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+          <span className="text-[9px] font-normal text-[#a8a8a8] opacity-40 uppercase tracking-tighter mt-1">{new Date(transaction.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
         </div>
       </div>
     </div>
