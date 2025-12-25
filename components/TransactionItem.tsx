@@ -128,11 +128,11 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
           transform: `translateX(${swipeOffset}px)`,
           transition: isSwiping ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
         }}
-        className={`relative z-10 w-full flex items-center gap-4 px-4 py-3 border-b border-[#0e0e10]/30 cursor-pointer select-none min-h-[96px]
+        className={`relative z-10 w-full flex items-center gap-4 px-4 py-3 border-b border-[#0e0e10]/30 cursor-pointer select-none min-h-[98px]
           ${isSelected ? 'bg-blue-600/20' : 'bg-[#1e1e1e] active:bg-zinc-800/40'}`}
       >
         {/* Icon Circle */}
-        <div className="relative flex-shrink-0">
+        <div className="relative flex-shrink-0 self-start mt-1">
           <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300
             ${isIncome ? 'bg-emerald-500/80 text-white' : isTransfer ? 'bg-blue-500/80 text-white' : 'bg-rose-500/80 text-white'}`}
             style={{ backgroundColor: transaction.category.toLowerCase().includes('loan') ? '#06b6d4cc' : undefined }}
@@ -144,36 +144,36 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
           </div>
         </div>
         
-        {/* Left Column Text - Spaced out more from Right Column */}
-        <div className="flex-1 min-w-0 flex flex-col justify-center pr-2">
-          <h4 className={`font-bold text-[17px] leading-tight truncate ${isSelected ? 'text-blue-400' : 'text-zinc-100'}`}>
+        {/* Center Content: Title, Account, Note */}
+        <div className="flex-1 min-w-0 flex flex-col justify-start">
+          <h4 className={`font-bold text-[17.5px] leading-tight truncate ${isSelected ? 'text-blue-400' : 'text-zinc-100'}`}>
             {displayTitle}
           </h4>
-          <span className="text-[14px] text-[#a8a8a8] leading-tight font-medium mt-0.5 truncate">
+          <span className="text-[14px] text-[#a8a8a8] leading-tight font-medium mt-0.5 truncate uppercase">
             {accountName}
           </span>
           {transaction.note && (
-            <span className="text-[13px] text-[#a8a8a8] font-medium italic opacity-70 mt-0.5 truncate leading-tight">
+            <span className="text-[13px] text-[#a8a8a8] font-medium italic opacity-70 mt-1 block leading-tight break-words max-h-10 overflow-hidden line-clamp-2">
               "{transaction.note}"
             </span>
           )}
         </div>
 
-        {/* Right Column Values - Pushed to the far right with gap */}
-        <div className="flex flex-col items-end justify-center gap-0.5 shrink-0 pl-4">
-          <span className={`font-bold text-[16.5px] tracking-tight leading-none ${
+        {/* Right Content: Amount, Pre-Balance, Date */}
+        <div className="flex flex-col items-end justify-start gap-1 shrink-0 pl-2 self-start mt-0.5">
+          <span className={`font-bold text-[16px] tracking-tight leading-none whitespace-nowrap ${
             isIncome ? 'text-emerald-500' : isTransfer ? 'text-blue-500' : 'text-rose-500'
           }`}>
             {isIncome ? '' : isTransfer ? '' : '-'}{transaction.currency} {transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </span>
           {preBalance !== undefined && (
-            <span className={`text-[12px] font-medium opacity-60 leading-none ${
+            <span className={`text-[12px] font-medium opacity-60 leading-none whitespace-nowrap ${
               isIncome ? 'text-emerald-500' : isTransfer ? 'text-blue-500' : 'text-rose-500'
             }`}>
               ({transaction.currency} {preBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })})
             </span>
           )}
-          <span className="text-[12px] font-bold text-[#a8a8a8] opacity-70 uppercase tracking-tighter mt-0.5">
+          <span className="text-[11.5px] font-bold text-[#a8a8a8] opacity-60 uppercase tracking-tighter mt-1">
             {new Date(transaction.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
           </span>
         </div>
