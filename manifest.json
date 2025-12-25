@@ -1,10 +1,9 @@
-
 {
   "name": "Fallet",
   "short_name": "Fallet",
   "description": "Professional Personal Finance & Budget Tracker",
-  "id": "/?source=pwa",
-  "start_url": "/",
+  "id": "/index.html",
+  "start_url": "/index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0e0e10",

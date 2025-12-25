@@ -1,8 +1,7 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Menu, Bell, Settings, Plus, LayoutGrid, List, TrendingUp, MoreVertical,
-  ArrowLeftRight, X, ChevronRight, PieChart, Trash2, Edit2, Check, ArrowLeft, Calendar, Clock, Search, Delete, Equal, Wallet, Landmark, Coins, CreditCard, ChevronDown, ChevronUp, Palette, Tag, CornerDownRight, ShoppingBag, Scissors, Utensils, ReceiptText, Circle, PiggyBank, Banknote, Gem, Vault, Receipt, Briefcase
+  ArrowLeftRight, X, ChevronRight, PieChart, Trash2, Edit2, Check, ArrowLeft, Calendar, Clock, Search, Delete, Equal, Wallet, Landmark, Coins, CreditCard, Tag, ShoppingBag, Scissors, Utensils, ReceiptText
 } from 'lucide-react';
 import AccountCard from './components/AccountCard.tsx';
 import TransactionItem from './components/TransactionItem.tsx';
@@ -19,19 +18,6 @@ const PRESET_COLORS = [
   '#f43f5e', '#71717a'
 ];
 
-const APP_ICONS = [
-  { name: 'Wallet', icon: Wallet },
-  { name: 'Landmark', icon: Landmark },
-  { name: 'Coins', icon: Coins },
-  { name: 'CreditCard', icon: CreditCard },
-  { name: 'PiggyBank', icon: PiggyBank },
-  { name: 'Banknote', icon: Banknote },
-  { name: 'Gem', icon: Gem },
-  { name: 'Vault', icon: Vault },
-  { name: 'Receipt', icon: Receipt },
-  { name: 'Briefcase', icon: Briefcase }
-];
-
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<'dashboard' | 'records' | 'categories'>('dashboard');
   
@@ -46,9 +32,6 @@ const App: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>(() => {
     const saved = localStorage.getItem('fallet_categories');
     return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
-  });
-  const [appIconName, setAppIconName] = useState<string>(() => {
-    return localStorage.getItem('fallet_app_icon') || 'Wallet';
   });
 
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>(() => {
@@ -71,7 +54,6 @@ const App: React.FC = () => {
   const [showFromAccountPicker, setShowFromAccountPicker] = useState(false);
   const [showToAccountPicker, setShowToAccountPicker] = useState(false);
   const [selectedMainCategory, setSelectedMainCategory] = useState<Category | null>(null);
-  const [isSearchingCategory, setIsSearchingCategory] = useState(false);
 
   const [tempAccount, setTempAccount] = useState<Account | null>(null);
   const [isEditingCategoryName, setIsEditingCategoryName] = useState(false);
@@ -101,7 +83,6 @@ const App: React.FC = () => {
   useEffect(() => localStorage.setItem('fallet_transactions', JSON.stringify(transactions)), [transactions]);
   useEffect(() => localStorage.setItem('fallet_categories', JSON.stringify(categories)), [categories]);
   useEffect(() => localStorage.setItem('fallet_selected_accounts', JSON.stringify(selectedAccountIds)), [selectedAccountIds]);
-  useEffect(() => localStorage.setItem('fallet_app_icon', appIconName), [appIconName]);
 
   const pushNav = () => window.history.pushState({ modal: true }, "");
 
@@ -418,8 +399,6 @@ const App: React.FC = () => {
     setSelectedAccountIds(prev => prev.includes(accId) ? prev.filter(x => x !== accId) : [...prev, accId]);
   };
 
-  const CurrentAppIcon = APP_ICONS.find(i => i.name === appIconName)?.icon || Wallet;
-
   return (
     <div className="max-w-md mx-auto h-[100dvh] bg-[#0e0e10] flex flex-col relative overflow-hidden select-none">
       {/* Selection Header */}
@@ -436,10 +415,10 @@ const App: React.FC = () => {
       {/* Main Header */}
       <header className="p-4 flex items-center justify-between sticky top-0 z-30 bg-[#0e0e10]/90 backdrop-blur-md safe-top border-b border-zinc-900/50">
         <div className="flex items-center gap-3">
-          <button onClick={() => { setShowSettings(true); pushNav(); }} className="flex items-center gap-2 active:scale-95 transition-transform">
-            <CurrentAppIcon className="w-6 h-6 text-blue-500" />
+          <div className="flex items-center gap-2">
+            <Wallet className="w-6 h-6 text-blue-500" />
             <h1 className="text-xl font-medium tracking-tight text-white uppercase">Fallet</h1>
-          </button>
+          </div>
         </div>
         <Bell className="w-6 h-6 text-zinc-400" />
       </header>
@@ -537,7 +516,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* FAB */}
+      {/* FAB and Nav */}
       <button onClick={handleOpenNewTransaction} className={`fixed bottom-[114px] right-6 w-14 h-14 bg-blue-600 rounded-[12px] shadow-2xl flex items-center justify-center text-white z-50 hover:scale-105 active:scale-95 transition-all border-t border-white/20 ${selectedRecordIds.length > 0 ? 'scale-0' : 'scale-100'}`}><Plus className="w-8 h-8" /></button>
 
       <nav className={`fixed bottom-0 left-0 right-0 bg-[#0e0e10]/95 backdrop-blur-2xl border-t border-zinc-900 flex justify-around p-3 pb-10 z-40 safe-bottom transition-transform duration-300 ${selectedRecordIds.length > 0 ? 'translate-y-full' : 'translate-y-0'}`}>
@@ -556,24 +535,9 @@ const App: React.FC = () => {
             </div>
             
             <div className="flex-1 overflow-y-auto no-scrollbar space-y-8 pr-1">
-              <div className="space-y-4">
-                <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-[0.2em] ml-2">App Logo</span>
-                <div className="grid grid-cols-5 gap-3 bg-[#0e0e10] p-4 rounded-[10px] border border-zinc-800/60 shadow-inner">
-                  {APP_ICONS.map(({ name, icon: IconComponent }) => (
-                    <button 
-                      key={name} 
-                      onClick={() => setAppIconName(name)} 
-                      className={`w-full aspect-square flex items-center justify-center rounded-xl border transition-all ${appIconName === name ? 'bg-blue-600 border-blue-400 text-white shadow-lg scale-110' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-200'}`}
-                    >
-                      <IconComponent className="w-5 h-5" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <div className="space-y-3">
                 <div className="flex items-center justify-between px-2">
-                  <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-[0.2em]">Accounts</span>
+                  <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-[0.2em]">Manage Accounts</span>
                   <button onClick={() => { setIsAddingAccount(true); setShowSettings(false); pushNav(); }} className="text-blue-500 p-1 bg-blue-500/10 rounded-full"><Plus className="w-4 h-4" /></button>
                 </div>
                 <div className="space-y-2">
@@ -599,7 +563,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Form and Selection Modals follow (Keeping them optimized from the previous logic) */}
+      {/* Entry Modal */}
       {isAddingTransaction && (
         <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col safe-top animate-in slide-in-from-bottom duration-300">
            <div className="bg-blue-600 p-4 shrink-0"><div className="flex items-center justify-between mb-8"><button onClick={() => setIsAddingTransaction(false)}><X className="w-6 h-6 text-white" /></button><button onClick={handleSaveTransaction}><Check className="w-7 h-7 text-white" /></button></div><div className="flex gap-1 bg-blue-700/50 p-1 rounded-[10px] border border-blue-400/20">{(['INCOME', 'EXPENSE', 'TRANSFER'] as TransactionType[]).map(type => (<button key={type} onClick={() => { setTxType(type); if(type === 'TRANSFER') setTxCategory('Transfer'); }} className={`flex-1 py-3 text-[10px] font-medium uppercase tracking-widest rounded-[4px] transition-all ${txType === type ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-200 opacity-70'}`}>{type}</button>))}</div></div>
@@ -651,7 +615,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Selectors for Category, From, and To Account follow the same optimized pattern */}
       {showCategoryPicker && (
         <div className="fixed inset-0 z-[200] bg-[#0e0e10] flex flex-col safe-top animate-in slide-in-from-bottom duration-300 no-scrollbar">
            <header className="p-6 flex items-center justify-between border-b border-zinc-900">
