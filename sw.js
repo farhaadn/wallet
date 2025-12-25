@@ -1,4 +1,5 @@
-const CACHE_NAME = 'fallet-v1';
+
+const CACHE_NAME = 'zenwallet-v1';
 const ASSETS = [
   '/',
   '/index.html',
