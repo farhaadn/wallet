@@ -62,6 +62,12 @@ const App: React.FC = () => {
   const [managingCategory, setManagingCategory] = useState<Category | null>(null);
   const [isEditingCategoryName, setIsEditingCategoryName] = useState(false);
   const [editingCategoryValue, setEditingCategoryValue] = useState('');
+  
+  // States for sub-category inline editing
+  const [editingSubIndex, setEditingSubIndex] = useState<number | null>(null);
+  const [editingSubValue, setEditingSubValue] = useState('');
+  const [isAddingSub, setIsAddingSub] = useState(false);
+  const [newSubValue, setNewSubValue] = useState('');
 
   const [newAccName, setNewAccName] = useState('');
   const [newAccBalance, setNewAccBalance] = useState('0');
@@ -264,7 +270,6 @@ const App: React.FC = () => {
   };
 
   const handleDeleteAccount = (id: string) => {
-    // Check if account has any associated transactions
     const hasTransactions = transactions.some(t => t.accountId === id || t.toAccountId === id);
     if (hasTransactions) {
       alert("This account has transaction records and cannot be deleted. Please delete its records first.");
@@ -318,41 +323,84 @@ const App: React.FC = () => {
 
   const updateCategoryName = (catId: string, newName: string) => {
     if (!newName) return;
+    const oldCat = categories.find(c => c.id === catId);
+    if (!oldCat) return;
+    const oldName = oldCat.name;
+
+    // 1. Update Category State
     setCategories(prev => prev.map(c => c.id === catId ? { ...c, name: newName } : c));
+    
+    // 2. Propagate change to Transactions State
+    setTransactions(prev => prev.map(t => t.category === oldName ? { ...t, category: newName } : t));
+
     setIsEditingCategoryName(false);
     setManagingCategory(prev => prev ? { ...prev, name: newName } : null);
   };
 
-  // Sub-category logic
-  const handleAddSubCategory = (catId: string) => {
-    const name = prompt("New sub-category name:");
-    if (!name) return;
-    setCategories(prev => prev.map(c => 
-      c.id === catId ? { ...c, subCategories: [...c.subCategories, name] } : c
-    ));
-    setManagingCategory(prev => prev ? { ...prev, subCategories: [...prev.subCategories, name] } : null);
-  };
+  const saveSubCategoryEdit = (catId: string, index: number, newSubName: string) => {
+    const category = categories.find(c => c.id === catId);
+    if (!category || !newSubName) {
+      setEditingSubIndex(null);
+      return;
+    }
+    const oldSubName = category.subCategories[index];
+    if (oldSubName === newSubName) {
+      setEditingSubIndex(null);
+      return;
+    }
 
-  const handleEditSubCategory = (catId: string, oldName: string, index: number) => {
-    const newName = prompt("Edit sub-category:", oldName);
-    if (!newName || newName === oldName) return;
+    // 1. Update Category State
     setCategories(prev => prev.map(c => {
       if (c.id === catId) {
         const nextSubs = [...c.subCategories];
-        nextSubs[index] = newName;
+        nextSubs[index] = newSubName;
         return { ...c, subCategories: nextSubs };
       }
       return c;
     }));
+    
+    // 2. Propagate to Transactions State
+    setTransactions(prev => prev.map(t => 
+      (t.category === category.name && t.subCategory === oldSubName) 
+        ? { ...t, subCategory: newSubName } 
+        : t
+    ));
+
+    // 3. Update Managing UI
     setManagingCategory(prev => {
       if (!prev) return null;
       const nextSubs = [...prev.subCategories];
-      nextSubs[index] = newName;
+      nextSubs[index] = newSubName;
       return { ...prev, subCategories: nextSubs };
     });
+    setEditingSubIndex(null);
+  };
+
+  const handleAddSubCategory = (catId: string, subName: string) => {
+    if (!subName) {
+      setIsAddingSub(false);
+      return;
+    }
+    setCategories(prev => prev.map(c => 
+      c.id === catId ? { ...c, subCategories: [...c.subCategories, subName] } : c
+    ));
+    setManagingCategory(prev => prev ? { ...prev, subCategories: [...prev.subCategories, subName] } : null);
+    setIsAddingSub(false);
+    setNewSubValue('');
   };
 
   const handleDeleteSubCategory = (catId: string, index: number) => {
+    const category = categories.find(c => c.id === catId);
+    if (!category) return;
+    const subName = category.subCategories[index];
+    
+    // Safety check for history
+    const hasTransactions = transactions.some(t => t.category === category.name && t.subCategory === subName);
+    if (hasTransactions) {
+      alert("This sub-category is used in existing transactions. You should rename it instead of deleting.");
+      return;
+    }
+
     if (!confirm("Are you sure you want to delete this sub-category?")) return;
     setCategories(prev => prev.map(c => {
       if (c.id === catId) {
@@ -642,7 +690,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Account Picker Modal - Screenshot-matched UI with solid high-contrast background */}
+      {/* Account Picker Modal */}
       {(showFromAccountPicker || showToAccountPicker) && (
         <div className="fixed inset-0 z-[150] bg-[#0e0e10] flex flex-col p-6 safe-top animate-in fade-in zoom-in duration-200">
            <div className="flex items-center justify-between mb-8">
@@ -666,7 +714,6 @@ const App: React.FC = () => {
                   className="w-full flex items-center justify-between p-5 bg-zinc-900 border border-zinc-800 rounded-[1.8rem] active:scale-[0.98] transition-all hover:bg-zinc-800/50"
                 >
                   <div className="flex items-center gap-4">
-                    {/* Icon Only (Removed color dot/circle) */}
                     <div style={{ color: acc.color }} className="opacity-80">
                       <AccountIcon type={acc.type} className="w-5 h-5" />
                     </div>
@@ -679,7 +726,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Category Picker Modal with solid high-contrast background */}
+      {/* Category Picker Modal */}
       {showCategoryPicker && (
         <div className="fixed inset-0 z-[150] bg-[#0e0e10] flex flex-col p-6 safe-top animate-in fade-in zoom-in duration-200">
            <div className="flex items-center justify-between mb-6">
@@ -710,7 +757,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Sub-category & Category Details Modal with solid high-contrast background */}
+      {/* Manage Details Modal (Propagates name changes to history) */}
       {managingCategory && (
         <div className="fixed inset-0 z-[160] bg-[#0e0e10] flex flex-col p-6 safe-top animate-in slide-in-from-bottom duration-300">
            <div className="flex items-center justify-between mb-8">
@@ -723,7 +770,14 @@ const App: React.FC = () => {
              <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest block mb-2">Category Name</span>
              <div className="flex items-center justify-between">
                 {isEditingCategoryName ? (
-                  <input autoFocus value={editingCategoryValue} onChange={e => setEditingCategoryValue(e.target.value)} onBlur={() => updateCategoryName(managingCategory.id, editingCategoryValue)} className="bg-transparent border-b border-blue-500 outline-none text-2xl font-bold text-white w-full" />
+                  <input 
+                    autoFocus 
+                    value={editingCategoryValue} 
+                    onChange={e => setEditingCategoryValue(e.target.value)} 
+                    onBlur={() => updateCategoryName(managingCategory.id, editingCategoryValue)}
+                    onKeyDown={(e) => e.key === 'Enter' && updateCategoryName(managingCategory.id, editingCategoryValue)}
+                    className="bg-transparent border-b border-blue-500 outline-none text-2xl font-bold text-white w-full" 
+                  />
                 ) : (
                   <>
                     <span className="text-2xl font-bold text-white">{managingCategory.name}</span>
@@ -736,15 +790,55 @@ const App: React.FC = () => {
            <div className="flex-1 overflow-y-auto no-scrollbar pb-20">
               <div className="flex items-center justify-between mb-4 px-2">
                 <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Sub-categories</span>
-                <button onClick={() => handleAddSubCategory(managingCategory.id)} className="text-blue-500 font-bold flex items-center gap-1 bg-blue-500/10 px-4 py-1.5 rounded-full text-sm active:scale-95 transition-all"><Plus className="w-4 h-4" /> Add New</button>
+                <button 
+                  onClick={() => setIsAddingSub(true)} 
+                  className="text-blue-500 font-bold flex items-center gap-1 bg-blue-500/10 px-4 py-1.5 rounded-full text-sm active:scale-95 transition-all"
+                >
+                  <Plus className="w-4 h-4" /> Add New
+                </button>
               </div>
+              
               <div className="space-y-2">
+                 {/* Inline Adding Input */}
+                 {isAddingSub && (
+                   <div className="p-4 bg-zinc-800 border-2 border-blue-500/50 rounded-2xl animate-in slide-in-from-top duration-200">
+                     <input 
+                       autoFocus
+                       placeholder="New sub-category..."
+                       value={newSubValue}
+                       onChange={e => setNewSubValue(e.target.value)}
+                       onBlur={() => handleAddSubCategory(managingCategory.id, newSubValue)}
+                       onKeyDown={(e) => e.key === 'Enter' && handleAddSubCategory(managingCategory.id, newSubValue)}
+                       className="bg-transparent outline-none font-bold text-white w-full"
+                     />
+                   </div>
+                 )}
+
                  {managingCategory.subCategories.map((sub, idx) => (
                    <div key={idx} className="p-4 bg-zinc-900 rounded-2xl flex items-center justify-between border border-zinc-800">
-                      <span className="font-bold text-zinc-200">{sub}</span>
+                      {editingSubIndex === idx ? (
+                        <input 
+                          autoFocus
+                          value={editingSubValue}
+                          onChange={e => setEditingSubValue(e.target.value)}
+                          onBlur={() => saveSubCategoryEdit(managingCategory.id, idx, editingSubValue)}
+                          onKeyDown={(e) => e.key === 'Enter' && saveSubCategoryEdit(managingCategory.id, idx, editingSubValue)}
+                          className="bg-transparent border-b border-blue-500 outline-none font-bold text-white w-full"
+                        />
+                      ) : (
+                        <span className="font-bold text-zinc-200">{sub}</span>
+                      )}
+                      
                       <div className="flex gap-2">
-                         <button onClick={() => handleEditSubCategory(managingCategory.id, sub, idx)} className="p-2 text-zinc-500 hover:text-blue-400"><Edit2 className="w-4 h-4" /></button>
-                         <button onClick={() => handleDeleteSubCategory(managingCategory.id, idx)} className="p-2 text-zinc-500 hover:text-rose-500"><Trash2 className="w-4 h-4" /></button>
+                         <button 
+                            onClick={() => { setEditingSubIndex(idx); setEditingSubValue(sub); }} 
+                            className={`p-2 transition-colors ${editingSubIndex === idx ? 'text-blue-500' : 'text-zinc-500 hover:text-blue-400'}`}
+                         >
+                           <Edit2 className="w-4 h-4" />
+                         </button>
+                         <button onClick={() => handleDeleteSubCategory(managingCategory.id, idx)} className="p-2 text-zinc-500 hover:text-rose-500">
+                           <Trash2 className="w-4 h-4" />
+                         </button>
                       </div>
                    </div>
                  ))}
