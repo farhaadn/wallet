@@ -27,7 +27,6 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
 }) => {
   const isIncome = transaction.type === TransactionType.INCOME;
   const isTransfer = transaction.type === TransactionType.TRANSFER;
-  const isExpense = transaction.type === TransactionType.EXPENSE;
 
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -136,7 +135,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
         <div className="relative flex-shrink-0">
           <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300
             ${isIncome ? 'bg-emerald-500/80 text-white' : isTransfer ? 'bg-blue-500/80 text-white' : 'bg-rose-500/80 text-white'}`}
-            style={{ backgroundColor: transaction.category.includes('Loan') ? '#06b6d4cc' : undefined }}
+            style={{ backgroundColor: transaction.category.toLowerCase().includes('loan') ? '#06b6d4cc' : undefined }}
           >
             {getCategoryIcon()}
           </div>
@@ -145,8 +144,8 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
           </div>
         </div>
         
-        {/* Left Column Text */}
-        <div className="flex-1 min-w-0 flex flex-col justify-center">
+        {/* Left Column Text - Spaced out more from Right Column */}
+        <div className="flex-1 min-w-0 flex flex-col justify-center pr-2">
           <h4 className={`font-bold text-[17px] leading-tight truncate ${isSelected ? 'text-blue-400' : 'text-zinc-100'}`}>
             {displayTitle}
           </h4>
@@ -160,8 +159,8 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
           )}
         </div>
 
-        {/* Right Column Values */}
-        <div className="flex flex-col items-end justify-center gap-0.5">
+        {/* Right Column Values - Pushed to the far right with gap */}
+        <div className="flex flex-col items-end justify-center gap-0.5 shrink-0 pl-4">
           <span className={`font-bold text-[16.5px] tracking-tight leading-none ${
             isIncome ? 'text-emerald-500' : isTransfer ? 'text-blue-500' : 'text-rose-500'
           }`}>
