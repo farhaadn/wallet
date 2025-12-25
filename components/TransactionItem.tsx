@@ -147,17 +147,17 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
           
           <div className="flex items-center gap-1 mt-0.5">
              {isTransfer ? (
-                <span className="text-[11px] text-[#a8a8a8] font-normal truncate opacity-60">
+                <span className="text-[11px] text-[#a8a8a8] font-normal truncate">
                   {fromAccountName} <span className="mx-0.5 opacity-40">→</span> {toAccountName}
                 </span>
              ) : (
-                <span className="text-[11px] text-[#a8a8a8] leading-tight font-normal truncate uppercase tracking-tight opacity-40">{accountName}</span>
+                <span className="text-[11px] text-[#a8a8a8] leading-tight font-normal truncate uppercase tracking-tight">{accountName}</span>
              )}
           </div>
 
           {transaction.note && (
             <div className="mt-0.5 block">
-              <span className="text-[11px] text-zinc-500 font-normal italic leading-tight truncate max-w-full block">"{transaction.note}"</span>
+              <span className="text-[11px] text-[#a8a8a8] font-normal italic leading-tight truncate max-w-full block">"{transaction.note}"</span>
             </div>
           )}
         </div>
@@ -171,7 +171,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
               ({transaction.currency} {preBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
             </span>
           )}
-          <span className="text-[9px] font-normal text-[#a8a8a8] opacity-40 uppercase tracking-tighter mt-1">{new Date(transaction.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+          <span className="text-[9px] font-normal text-[#a8a8a8] uppercase tracking-tighter mt-1">{new Date(transaction.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
         </div>
       </div>
     </div>
