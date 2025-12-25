@@ -30,33 +30,44 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
   const startX = useRef(0);
+  const startY = useRef(0);
   const swipeLimit = -180;
 
   const longPressTimer = useRef<number | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (onLongPress) {
+    if (onLongPress && !isSelected) {
       longPressTimer.current = window.setTimeout(() => {
         onLongPress();
         if ('vibrate' in navigator) navigator.vibrate(50);
       }, 600);
     }
     startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
     setIsSwiping(true);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     const currentX = e.touches[0].clientX;
-    const diff = currentX - startX.current;
-    if (Math.abs(diff) > 10 && longPressTimer.current) {
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - startX.current;
+    const diffY = currentY - startY.current;
+
+    // If movement is detected (scroll or swipe), clear the long press timer
+    if ((Math.abs(diffX) > 8 || Math.abs(diffY) > 8) && longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
+
     if (!isSwiping) return;
-    if (diff < 0) {
-      setSwipeOffset(Math.max(diff, swipeLimit));
-    } else {
-      setSwipeOffset(0);
+
+    // Only allow horizontal swiping if not scrolling vertically much
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      if (diffX < 0) {
+        setSwipeOffset(Math.max(diffX, swipeLimit));
+      } else {
+        setSwipeOffset(0);
+      }
     }
   };
 
@@ -78,8 +89,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
   const displayTitle = transaction.subCategory || transaction.category;
 
   return (
-    <div className="relative w-full overflow-hidden bg-[#0e0e10]">
-      {/* Background Actions */}
+    <div className="relative w-full overflow-hidden bg-[#1e1e1e]">
       <div 
         className="absolute inset-y-0 right-0 flex bg-rose-600 transition-opacity duration-200"
         style={{ width: `${Math.abs(swipeLimit)}px`, opacity: swipeOffset < -10 ? 1 : 0 }}
@@ -107,7 +117,6 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
         </button>
       </div>
 
-      {/* Main Content Layer - Reduced Height to 74px (Approx 20% reduction from 92px) */}
       <div 
         onClick={() => {
           if (swipeOffset !== 0) {
@@ -123,8 +132,8 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
           transform: `translateX(${swipeOffset}px)`,
           transition: isSwiping ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
         }}
-        className={`relative z-10 w-full flex items-center gap-4 px-4 py-2 border-b border-zinc-900/40 cursor-pointer select-none h-[74px]
-          ${isSelected ? 'bg-blue-600/20' : 'bg-[#0e0e10] active:bg-zinc-800/40'}`}
+        className={`relative z-10 w-full flex items-center gap-4 px-4 py-2 border-b border-[#0e0e10]/40 cursor-pointer select-none h-[74px]
+          ${isSelected ? 'bg-blue-600/20' : 'bg-[#1e1e1e] active:bg-zinc-800/40'}`}
       >
         <div className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-all duration-300
           ${isSelected 
@@ -140,7 +149,6 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
         </div>
         
         <div className="flex-1 min-w-0 flex flex-col justify-center h-full gap-0.5">
-          {/* Line 1: (Sub)Category & Amount */}
           <div className="flex items-center justify-between gap-2">
             <h4 className={`font-bold text-[14px] truncate ${isSelected ? 'text-blue-400' : 'text-zinc-100'}`}>
               {displayTitle}
@@ -154,7 +162,6 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
             </span>
           </div>
 
-          {/* Line 2: Account Name & Date */}
           <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase">
             <span className="truncate opacity-70 tracking-tight">{accountName}</span>
             <span className="shrink-0 ml-2 tracking-tighter opacity-60">
@@ -162,7 +169,6 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
             </span>
           </div>
 
-          {/* Line 3: Note (Ensures fixed size for consistency) */}
           <div className="h-[12px] flex items-center">
             {transaction.note ? (
               <span className="text-[10px] text-zinc-400 truncate opacity-50 font-medium italic">
