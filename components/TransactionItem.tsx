@@ -134,7 +134,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         style={{ transform: `translateX(${swipeOffset}px)`, transition: isSwiping ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
-        className={`relative z-10 w-full flex items-center gap-2 px-2.5 py-3 border-b border-[#0e0e10]/30 cursor-pointer select-none min-h-[82px] ${isSelected ? 'bg-blue-600/20' : 'bg-[#1e1e1e] active:bg-zinc-800/40'}`}
+        className={`relative z-10 w-full flex items-center gap-2 px-3 py-3 border-b border-[#0e0e10]/30 cursor-pointer select-none min-h-[82px] ${isSelected ? 'bg-blue-600/20' : 'bg-[#1e1e1e] active:bg-zinc-800/40'}`}
       >
         <div className="relative flex-shrink-0 self-center">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${getIconBgColor()} text-white shadow-lg`}>
