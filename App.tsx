@@ -77,7 +77,7 @@ const App: React.FC = () => {
   
   // Advanced Reordering state
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
-  const accountsListRef = useRef<HTMLDivElement>(null);
+  const accountsContainerRef = useRef<HTMLDivElement>(null);
 
   // Persistence
   useEffect(() => localStorage.setItem('fallet_accounts', JSON.stringify(accounts)), [accounts]);
@@ -406,18 +406,55 @@ const App: React.FC = () => {
 
   const currentAccountType = isAddingAccount ? newAccType : tempAccount?.type || AccountType.BANK;
 
-  // Optimized Pointer-based Drag & Drop Reordering
-  const handleAccountPointerMove = (e: React.PointerEvent, index: number) => {
-    if (draggingIdx === null || draggingIdx === index) return;
-    
-    // Smooth swap logic
-    const newAccounts = [...accounts];
-    const item = newAccounts[draggingIdx];
-    newAccounts.splice(draggingIdx, 1);
-    newAccounts.splice(index, 0, item);
-    
-    setAccounts(newAccounts);
+  // Optimized Global Pointer Drag Reordering
+  const onHandlePointerDown = (e: React.PointerEvent, index: number) => {
     setDraggingIdx(index);
+    if ('vibrate' in navigator) navigator.vibrate(20);
+    
+    // Attach global move and up listeners
+    const handleGlobalPointerMove = (moveEvent: PointerEvent) => {
+      if (accountsContainerRef.current) {
+        const containerRect = accountsContainerRef.current.getBoundingClientRect();
+        const y = moveEvent.clientY;
+        
+        // Find which child is under the pointer
+        const children = Array.from(accountsContainerRef.current.children);
+        let targetIdx = -1;
+        
+        for (let i = 0; i < children.length; i++) {
+          const rect = children[i].getBoundingClientRect();
+          if (y >= rect.top && y <= rect.bottom) {
+            targetIdx = i;
+            break;
+          }
+        }
+        
+        if (targetIdx !== -1) {
+          setDraggingIdx(currentIdx => {
+            if (currentIdx === null || currentIdx === targetIdx) return currentIdx;
+            
+            // Reorder accounts state locally for a smooth feel
+            setAccounts(prev => {
+              const next = [...prev];
+              const item = next[currentIdx];
+              next.splice(currentIdx, 1);
+              next.splice(targetIdx, 0, item);
+              return next;
+            });
+            return targetIdx;
+          });
+        }
+      }
+    };
+
+    const handleGlobalPointerUp = () => {
+      setDraggingIdx(null);
+      window.removeEventListener('pointermove', handleGlobalPointerMove);
+      window.removeEventListener('pointerup', handleGlobalPointerUp);
+    };
+
+    window.addEventListener('pointermove', handleGlobalPointerMove);
+    window.addEventListener('pointerup', handleGlobalPointerUp);
   };
 
   return (
@@ -555,31 +592,22 @@ const App: React.FC = () => {
               <button onClick={() => setShowSettings(false)} className="p-2 bg-[#0e0e10] rounded-full text-zinc-400"><X className="w-5 h-5" /></button>
             </div>
             
-            <div className="flex-1 overflow-y-auto no-scrollbar space-y-8 pr-1" ref={accountsListRef}>
+            <div className="flex-1 overflow-y-auto no-scrollbar space-y-8 pr-1">
               <div className="space-y-3">
                 <div className="flex items-center justify-between px-2">
                   <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-[0.2em]">Manage Accounts</span>
                   <button onClick={() => { setIsAddingAccount(true); setShowSettings(false); pushNav(); }} className="text-blue-500 p-1 bg-blue-500/10 rounded-full"><Plus className="w-4 h-4" /></button>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2" ref={accountsContainerRef}>
                    {accounts.map((acc, index) => (
                      <div 
                         key={acc.id} 
-                        onPointerMove={(e) => handleAccountPointerMove(e, index)}
-                        className={`flex items-center justify-between p-4 bg-[#0e0e10] border rounded-[8px] transition-all duration-300 relative ${draggingIdx === index ? 'opacity-40 scale-[1.02] border-blue-500 z-50 shadow-2xl ring-1 ring-blue-500/30' : 'border-zinc-800'}`}
+                        className={`flex items-center justify-between p-4 bg-[#0e0e10] border rounded-[8px] transition-all duration-300 relative ${draggingIdx === index ? 'opacity-40 scale-[1.03] border-blue-500 z-50 shadow-2xl ring-1 ring-blue-500/50' : 'border-zinc-800'}`}
                      >
                         <div className="flex items-center gap-3">
-                          {/* Modern Reorder Handle with touch-action: none to prevent browser refresh/scroll */}
+                          {/* Modern Reorder Handle with touch-action: none to prevent browser pull-to-refresh */}
                           <div 
-                            onPointerDown={(e) => {
-                              (e.target as HTMLElement).setPointerCapture(e.pointerId);
-                              setDraggingIdx(index);
-                              if ('vibrate' in navigator) navigator.vibrate(20);
-                            }}
-                            onPointerUp={(e) => {
-                              (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-                              setDraggingIdx(null);
-                            }}
+                            onPointerDown={(e) => onHandlePointerDown(e, index)}
                             className="p-3 -ml-3 text-zinc-600 hover:text-zinc-300 cursor-grab active:cursor-grabbing touch-none select-none"
                           >
                             <GripVertical className="w-5 h-5" />
@@ -590,7 +618,7 @@ const App: React.FC = () => {
                           </div>
                           <span className="font-medium text-zinc-200">{acc.name}</span>
                         </div>
-                        <button onClick={() => handleStartEditAccount(acc)} className="p-2 text-blue-400 bg-blue-400/10 rounded-xl active:bg-blue-400/20"><Edit2 className="w-4 h-4" /></button>
+                        <button onClick={() => handleStartEditAccount(acc)} className="p-2 text-blue-400 bg-blue-400/10 rounded-xl active:bg-blue-400/20 transition-all"><Edit2 className="w-4 h-4" /></button>
                      </div>
                    ))}
                 </div>
