@@ -75,9 +75,9 @@ const App: React.FC = () => {
 
   const colorInputRef = useRef<HTMLInputElement>(null);
   
-  // Reordering state
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const listRef = useRef<HTMLDivElement>(null);
+  // Advanced Reordering state
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+  const accountsListRef = useRef<HTMLDivElement>(null);
 
   // Persistence
   useEffect(() => localStorage.setItem('fallet_accounts', JSON.stringify(accounts)), [accounts]);
@@ -406,27 +406,18 @@ const App: React.FC = () => {
 
   const currentAccountType = isAddingAccount ? newAccType : tempAccount?.type || AccountType.BANK;
 
-  // Custom sorting logic for manual touch dragging
-  const handleDragStart = (index: number) => {
-    setDraggedIndex(index);
-    if ('vibrate' in navigator) navigator.vibrate(50);
-  };
-
-  const handleDragOver = (e: React.MouseEvent | React.TouchEvent, overIndex: number) => {
-    if (draggedIndex === null || draggedIndex === overIndex) return;
+  // Optimized Pointer-based Drag & Drop Reordering
+  const handleAccountPointerMove = (e: React.PointerEvent, index: number) => {
+    if (draggingIdx === null || draggingIdx === index) return;
     
-    // Perform swap in real-time
+    // Smooth swap logic
     const newAccounts = [...accounts];
-    const moved = newAccounts[draggedIndex];
-    newAccounts.splice(draggedIndex, 1);
-    newAccounts.splice(overIndex, 0, moved);
+    const item = newAccounts[draggingIdx];
+    newAccounts.splice(draggingIdx, 1);
+    newAccounts.splice(index, 0, item);
     
     setAccounts(newAccounts);
-    setDraggedIndex(overIndex);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
+    setDraggingIdx(index);
   };
 
   return (
@@ -564,7 +555,7 @@ const App: React.FC = () => {
               <button onClick={() => setShowSettings(false)} className="p-2 bg-[#0e0e10] rounded-full text-zinc-400"><X className="w-5 h-5" /></button>
             </div>
             
-            <div className="flex-1 overflow-y-auto no-scrollbar space-y-8 pr-1" ref={listRef}>
+            <div className="flex-1 overflow-y-auto no-scrollbar space-y-8 pr-1" ref={accountsListRef}>
               <div className="space-y-3">
                 <div className="flex items-center justify-between px-2">
                   <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-[0.2em]">Manage Accounts</span>
@@ -574,30 +565,24 @@ const App: React.FC = () => {
                    {accounts.map((acc, index) => (
                      <div 
                         key={acc.id} 
-                        onMouseEnter={(e) => draggedIndex !== null && handleDragOver(e, index)}
-                        onTouchMove={(e) => {
-                          if (draggedIndex === null) return;
-                          const touch = e.touches[0];
-                          const elementAtPoint = document.elementFromPoint(touch.clientX, touch.clientY);
-                          const listItem = elementAtPoint?.closest('[data-index]');
-                          if (listItem) {
-                            const overIdx = parseInt(listItem.getAttribute('data-index') || '-1');
-                            if (overIdx !== -1) handleDragOver(e as any, overIdx);
-                          }
-                        }}
-                        data-index={index}
-                        className={`flex items-center justify-between p-4 bg-[#0e0e10] border rounded-[8px] transition-all duration-200 ${draggedIndex === index ? 'opacity-40 scale-95 border-blue-500 z-50 shadow-2xl ring-1 ring-blue-500' : 'border-zinc-800 hover:border-zinc-700'}`}
+                        onPointerMove={(e) => handleAccountPointerMove(e, index)}
+                        className={`flex items-center justify-between p-4 bg-[#0e0e10] border rounded-[8px] transition-all duration-300 relative ${draggingIdx === index ? 'opacity-40 scale-[1.02] border-blue-500 z-50 shadow-2xl ring-1 ring-blue-500/30' : 'border-zinc-800'}`}
                      >
                         <div className="flex items-center gap-3">
-                          {/* Reorder Handle */}
+                          {/* Modern Reorder Handle with touch-action: none to prevent browser refresh/scroll */}
                           <div 
-                            onMouseDown={() => handleDragStart(index)}
-                            onTouchStart={() => handleDragStart(index)}
-                            onMouseUp={handleDragEnd}
-                            onTouchEnd={handleDragEnd}
-                            className="p-2 -ml-2 text-zinc-600 hover:text-zinc-300 cursor-grab active:cursor-grabbing"
+                            onPointerDown={(e) => {
+                              (e.target as HTMLElement).setPointerCapture(e.pointerId);
+                              setDraggingIdx(index);
+                              if ('vibrate' in navigator) navigator.vibrate(20);
+                            }}
+                            onPointerUp={(e) => {
+                              (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+                              setDraggingIdx(null);
+                            }}
+                            className="p-3 -ml-3 text-zinc-600 hover:text-zinc-300 cursor-grab active:cursor-grabbing touch-none select-none"
                           >
-                            <GripVertical className="w-4 h-4" />
+                            <GripVertical className="w-5 h-5" />
                           </div>
 
                           <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: `${acc.color}20`, color: acc.color }}>
@@ -619,7 +604,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* ... Rest of the modals remain the same ... */}
+      {/* Transaction Entry Modal */}
       {isAddingTransaction && (
         <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col safe-top animate-in slide-in-from-bottom duration-300">
            <div className="bg-blue-600 p-4 shrink-0"><div className="flex items-center justify-between mb-8"><button onClick={() => setIsAddingTransaction(false)}><X className="w-6 h-6 text-white" /></button><button onClick={handleSaveTransaction}><Check className="w-7 h-7 text-white" /></button></div><div className="flex gap-1 bg-blue-700/50 p-1 rounded-[10px] border border-blue-400/20">{(['INCOME', 'EXPENSE', 'TRANSFER'] as TransactionType[]).map(type => (<button key={type} onClick={() => { setTxType(type); if(type === 'TRANSFER') setTxCategory('Transfer'); }} className={`flex-1 py-3 text-[10px] font-medium uppercase tracking-widest rounded-[4px] transition-all ${txType === type ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-200 opacity-70'}`}>{type}</button>))}</div></div>
@@ -628,6 +613,7 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Account Create/Edit Modal */}
       {(isAddingAccount || editingAccount) && (
         <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md overflow-y-auto no-scrollbar">
            <div className="w-full max-w-sm bg-[#1e1e1e] border border-zinc-800 rounded-[10px] p-6 space-y-5 animate-in zoom-in duration-200 shadow-2xl my-auto">
@@ -683,6 +669,7 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Account Type Picker Modal */}
       {showAccountTypePicker && (
         <div className="fixed inset-0 z-[250] bg-[#0e0e10] flex flex-col safe-top animate-in slide-in-from-bottom duration-300 no-scrollbar">
            <header className="p-4 flex items-center justify-between border-b border-zinc-900/50">
@@ -703,6 +690,7 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Category Picker Modal */}
       {showCategoryPicker && (
         <div className="fixed inset-0 z-[200] bg-[#0e0e10] flex flex-col safe-top animate-in slide-in-from-bottom duration-300 no-scrollbar">
            <header className="p-4 flex items-center justify-between border-b border-zinc-900/50">
@@ -729,6 +717,7 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Account Picker Modals (Records selection) */}
       {(showFromAccountPicker || showToAccountPicker) && (
         <div className="fixed inset-0 z-[220] bg-[#0e0e10] flex flex-col safe-top animate-in slide-in-from-bottom duration-300 no-scrollbar">
            <header className="p-4 flex items-center justify-between border-b border-zinc-900/50">
@@ -743,6 +732,7 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Category Management Modal */}
       {managingCategory && (
         <div className="fixed inset-0 z-[160] bg-[#0e0e10] flex flex-col p-4 safe-top animate-in slide-in-from-bottom duration-300 no-scrollbar">
            <div className="flex items-center justify-between mb-8"><button onClick={() => setManagingCategory(null)} className="p-2 text-zinc-500"><ArrowLeft className="w-6 h-6" /></button><h3 className="text-xl font-medium uppercase tracking-tight">Category Details</h3><button onClick={() => deleteCategory(managingCategory.id)} className="p-2 text-rose-500"><Trash2 className="w-5 h-5" /></button></div>
