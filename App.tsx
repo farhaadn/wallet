@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Menu, Bell, Settings, Plus, LayoutGrid, List, TrendingUp, MoreVertical,
-  ArrowLeftRight, X, ChevronRight, PieChart, Trash2, Edit2, Check, ArrowLeft, Calendar, Clock, Search, Delete, Equal, Wallet, Landmark, Coins, CreditCard, Tag, ShoppingBag, Scissors, Utensils, ReceiptText, Palette, ChevronDown, ChevronUp, GripVertical, Lock
+  ArrowLeftRight, X, ChevronRight, PieChart, Trash2, Edit2, Check, ArrowLeft, Calendar, Clock, Search, Delete, Equal, Wallet, Landmark, Coins, CreditCard, Tag, ShoppingBag, Scissors, Utensils, ReceiptText, Palette, ChevronDown, ChevronUp, GripVertical
 } from 'lucide-react';
 import AccountCard from './components/AccountCard.tsx';
 import TransactionItem from './components/TransactionItem.tsx';
@@ -75,9 +75,9 @@ const App: React.FC = () => {
 
   const colorInputRef = useRef<HTMLInputElement>(null);
   
-  // Reordering state
+  // Advanced Reordering state
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
-  const dragContainerRef = useRef<HTMLDivElement>(null);
+  const accountsContainerRef = useRef<HTMLDivElement>(null);
 
   // Persistence
   useEffect(() => localStorage.setItem('fallet_accounts', JSON.stringify(accounts)), [accounts]);
@@ -378,15 +378,14 @@ const App: React.FC = () => {
     return 'text-5xl';
   };
 
-  const AccountIcon = ({ type, className, color }: { type: AccountType, className?: string, color?: string }) => {
-    const finalStyle = color ? { color } : {};
+  const AccountIcon = ({ type, className }: { type: AccountType, className?: string }) => {
     switch (type) {
-      case 'BANK': return <Landmark className={className} style={finalStyle} />;
-      case 'CASH': return <Wallet className={className} style={finalStyle} />;
-      case 'CRYPTO': return <Coins className={className} style={finalStyle} />;
-      case 'SAVINGS': return <TrendingUp className={className} style={finalStyle} />;
-      case 'CREDIT': return <CreditCard className={className} style={finalStyle} />;
-      default: return <Wallet className={className} style={finalStyle} />;
+      case 'BANK': return <Landmark className={className} />;
+      case 'CASH': return <Wallet className={className} />;
+      case 'CRYPTO': return <Coins className={className} />;
+      case 'SAVINGS': return <TrendingUp className={className} />;
+      case 'CREDIT': return <CreditCard className={className} />;
+      default: return <Wallet className={className} />;
     }
   };
 
@@ -407,57 +406,55 @@ const App: React.FC = () => {
 
   const currentAccountType = isAddingAccount ? newAccType : tempAccount?.type || AccountType.BANK;
 
-  // New Reorder Logic using global pointer tracking
-  const onHandleStartDrag = (e: React.PointerEvent, index: number) => {
+  // Optimized Global Pointer Drag Reordering
+  const onHandlePointerDown = (e: React.PointerEvent, index: number) => {
     setDraggingIdx(index);
-    if ('vibrate' in navigator) navigator.vibrate(25);
-
-    const container = dragContainerRef.current;
-    if (!container) return;
-
-    const handlePointerMove = (moveEvent: PointerEvent) => {
-      const rect = container.getBoundingClientRect();
-      const relativeY = moveEvent.clientY - rect.top;
-      
-      const children = Array.from(container.children);
-      let targetIdx = -1;
-
-      for (let i = 0; i < children.length; i++) {
-        const childRect = children[i].getBoundingClientRect();
-        const midPoint = (childRect.top + childRect.bottom) / 2;
-        if (moveEvent.clientY < midPoint) {
-          targetIdx = i;
-          break;
+    if ('vibrate' in navigator) navigator.vibrate(20);
+    
+    // Attach global move and up listeners
+    const handleGlobalPointerMove = (moveEvent: PointerEvent) => {
+      if (accountsContainerRef.current) {
+        const containerRect = accountsContainerRef.current.getBoundingClientRect();
+        const y = moveEvent.clientY;
+        
+        // Find which child is under the pointer
+        const children = Array.from(accountsContainerRef.current.children);
+        let targetIdx = -1;
+        
+        for (let i = 0; i < children.length; i++) {
+          const rect = children[i].getBoundingClientRect();
+          if (y >= rect.top && y <= rect.bottom) {
+            targetIdx = i;
+            break;
+          }
         }
-        if (i === children.length - 1) {
-          targetIdx = i;
-        }
-      }
-
-      if (targetIdx !== -1) {
-        setDraggingIdx(currentIdx => {
-          if (currentIdx === null || currentIdx === targetIdx) return currentIdx;
-          
-          setAccounts(prev => {
-            const next = [...prev];
-            const item = next[currentIdx];
-            next.splice(currentIdx, 1);
-            next.splice(targetIdx, 0, item);
-            return next;
+        
+        if (targetIdx !== -1) {
+          setDraggingIdx(currentIdx => {
+            if (currentIdx === null || currentIdx === targetIdx) return currentIdx;
+            
+            // Reorder accounts state locally for a smooth feel
+            setAccounts(prev => {
+              const next = [...prev];
+              const item = next[currentIdx];
+              next.splice(currentIdx, 1);
+              next.splice(targetIdx, 0, item);
+              return next;
+            });
+            return targetIdx;
           });
-          return targetIdx;
-        });
+        }
       }
     };
 
-    const handlePointerUp = () => {
+    const handleGlobalPointerUp = () => {
       setDraggingIdx(null);
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointermove', handleGlobalPointerMove);
+      window.removeEventListener('pointerup', handleGlobalPointerUp);
     };
 
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointermove', handleGlobalPointerMove);
+    window.addEventListener('pointerup', handleGlobalPointerUp);
   };
 
   return (
@@ -586,51 +583,50 @@ const App: React.FC = () => {
         <button onClick={() => { setActiveView('categories'); pushNav(); }} className={`flex flex-col items-center gap-1 transition-all ${activeView === 'categories' ? 'text-blue-500 scale-110' : 'text-zinc-500'}`}><PieChart className="w-6 h-6" /><span className="text-[10px] font-medium uppercase tracking-tighter">Cats</span></button>
       </nav>
 
-      {/* Settings Modal (Matching screenshot) */}
+      {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 backdrop-blur-xl">
-          <div className="w-full h-full max-w-md flex flex-col bg-[#0e0e10] animate-in fade-in zoom-in duration-300">
-            <header className="p-4 flex items-center justify-between border-b border-zinc-800 safe-top">
-              <div className="flex items-center gap-4">
-                <button onClick={() => setShowSettings(false)} className="p-1 text-zinc-400"><X className="w-6 h-6" /></button>
-                <h3 className="text-xl font-medium">Settings</h3>
-              </div>
-              <button onClick={() => { setIsAddingAccount(true); setShowSettings(false); pushNav(); }} className="text-blue-500 p-1"><Plus className="w-6 h-6" /></button>
-            </header>
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+          <div className="w-full max-w-sm bg-[#1e1e1e] border border-zinc-800 rounded-[10px] p-6 space-y-6 shadow-2xl animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between sticky top-0 bg-[#1e1e1e] pb-4 shrink-0">
+              <h3 className="text-lg font-medium uppercase tracking-[0.1em] text-zinc-400">Settings</h3>
+              <button onClick={() => setShowSettings(false)} className="p-2 bg-[#0e0e10] rounded-full text-zinc-400"><X className="w-5 h-5" /></button>
+            </div>
             
-            <div className="flex-1 overflow-y-auto no-scrollbar space-y-1 p-2" ref={dragContainerRef}>
-              {accounts.map((acc, index) => (
-                <div 
-                  key={acc.id} 
-                  className={`flex items-center justify-between p-4 bg-[#1e1e1e] border-b border-black/20 relative transition-all duration-300 ${draggingIdx === index ? 'z-50 opacity-50 scale-[1.02] shadow-2xl ring-1 ring-blue-500/50' : 'z-10'}`}
-                >
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-zinc-800 shadow-md">
-                      <AccountIcon type={acc.type} className="w-5 h-5" color={acc.color} />
-                    </div>
-                    <div className="flex flex-col" onClick={() => handleStartEditAccount(acc)}>
-                      <span className="font-semibold text-[16px] text-zinc-100">{acc.name}</span>
-                      <span className="text-[12px] text-zinc-500 capitalize">{acc.type.toLowerCase()}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    {acc.balance < 0 && <Lock className="w-4 h-4 text-zinc-600" />}
-                    {/* Modern Reorder Handle matching screenshot */}
-                    <div 
-                      onPointerDown={(e) => onHandleStartDrag(e, index)}
-                      className="p-3 -mr-3 text-zinc-600 cursor-grab active:cursor-grabbing touch-none"
-                      style={{ touchAction: 'none' }}
-                    >
-                      <Menu className="w-5 h-5 opacity-40" />
-                    </div>
-                  </div>
+            <div className="flex-1 overflow-y-auto no-scrollbar space-y-8 pr-1">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between px-2">
+                  <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-[0.2em]">Manage Accounts</span>
+                  <button onClick={() => { setIsAddingAccount(true); setShowSettings(false); pushNav(); }} className="text-blue-500 p-1 bg-blue-500/10 rounded-full"><Plus className="w-4 h-4" /></button>
                 </div>
-              ))}
+                <div className="space-y-2" ref={accountsContainerRef}>
+                   {accounts.map((acc, index) => (
+                     <div 
+                        key={acc.id} 
+                        className={`flex items-center justify-between p-4 bg-[#0e0e10] border rounded-[8px] transition-all duration-300 relative ${draggingIdx === index ? 'opacity-40 scale-[1.03] border-blue-500 z-50 shadow-2xl ring-1 ring-blue-500/50' : 'border-zinc-800'}`}
+                     >
+                        <div className="flex items-center gap-3">
+                          {/* Modern Reorder Handle with touch-action: none to prevent browser pull-to-refresh */}
+                          <div 
+                            onPointerDown={(e) => onHandlePointerDown(e, index)}
+                            className="p-3 -ml-3 text-zinc-600 hover:text-zinc-300 cursor-grab active:cursor-grabbing touch-none select-none"
+                          >
+                            <GripVertical className="w-5 h-5" />
+                          </div>
+
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: `${acc.color}20`, color: acc.color }}>
+                            <AccountIcon type={acc.type} className="w-5 h-5" />
+                          </div>
+                          <span className="font-medium text-zinc-200">{acc.name}</span>
+                        </div>
+                        <button onClick={() => handleStartEditAccount(acc)} className="p-2 text-blue-400 bg-blue-400/10 rounded-xl active:bg-blue-400/20 transition-all"><Edit2 className="w-4 h-4" /></button>
+                     </div>
+                   ))}
+                </div>
+              </div>
             </div>
 
-            <div className="p-6 bg-[#0e0e10] safe-bottom">
-               <button onClick={() => { setIsAddingAccount(true); setShowSettings(false); pushNav(); }} className="w-full py-4 bg-blue-600 font-medium text-white rounded-[10px] shadow-lg active:scale-95 transition-all uppercase tracking-widest text-[13px]">Create New Account</button>
+            <div className="pt-4 border-t border-zinc-800 shrink-0">
+              <button onClick={() => { setIsAddingAccount(true); setShowSettings(false); pushNav(); }} className="w-full py-4 bg-blue-600 font-medium text-white rounded-[4px] shadow-lg active:scale-95 transition-all uppercase tracking-[0.15em] text-[11px]">New Account</button>
             </div>
           </div>
         </div>
